@@ -10,12 +10,12 @@ import supabase from '@/utils/supabase';
 
 // Mock apartment data
 const apartments = [
-  { id: '1', name: 'The Rise', address: '111 Beaver Ave, State College, PA' },
-  { id: '2', name: 'The Metropolitan', address: '400 W College Ave, State College, PA' },
-  { id: '3', name: 'The Legacy', address: '478 E Beaver Ave, State College, PA' },
-  { id: '4', name: 'Calder Commons', address: '511 E Calder Way, State College, PA' },
-  { id: '5', name: 'The Station', address: '330 W College Ave, State College, PA' },
-  { id: '6', name: 'Here State College', address: '131 Hiester St, State College, PA' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', name: 'The Rise', address: '111 Beaver Ave, State College, PA' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', name: 'The Metropolitan', address: '400 W College Ave, State College, PA' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', name: 'The Legacy', address: '478 E Beaver Ave, State College, PA' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', name: 'Calder Commons', address: '511 E Calder Way, State College, PA' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15', name: 'The Station', address: '330 W College Ave, State College, PA' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16', name: 'Here State College', address: '131 Hiester St, State College, PA' },
 ];
 
 // Amenities options

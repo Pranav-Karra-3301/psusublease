@@ -50,7 +50,13 @@ export function useAuth() {
 
   const signUp = async (email: string, password: string) => {
     try {
-      const { error, data } = await supabase.auth.signUp({ email, password });
+      const { error, data } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          emailRedirectTo: 'https://psusublease.vercel.app/auth'
+        }
+      });
       if (error) throw error;
       return { success: true, user: data.user };
     } catch (error: any) {

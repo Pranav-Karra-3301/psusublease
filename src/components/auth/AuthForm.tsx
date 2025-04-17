@@ -32,13 +32,19 @@ export default function AuthForm() {
         
         // If signup successful, add name and phone to profile
         if (result.success && result.user) {
+          const nameArray = name.split(' ');
+          const firstName = nameArray[0] || '';
+          const lastName = nameArray.slice(1).join(' ') || '';
+          
           const { error } = await supabase
             .from('profiles')
             .upsert({
               id: result.user.id,
-              full_name: name,
-              phone_number: phone,
+              first_name: firstName,
+              last_name: lastName,
+              phone: phone,
               email: email,
+              preferred_contact: 'email'
             });
             
           if (error) throw new Error('Failed to update profile information');
