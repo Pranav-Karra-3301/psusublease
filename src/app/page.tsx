@@ -8,7 +8,18 @@ import { useAuthContext } from '@/components/auth/AuthProvider';
 import supabase from '@/utils/supabase';
 
 export default function Home() {
-  const [listings, setListings] = useState<any[]>([]);
+  const [listings, setListings] = useState<{
+    id: string;
+    apartment_name?: string;
+    location?: string;
+    price?: number;
+    start_date?: string;
+    end_date?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    image_url?: string;
+    created_at?: string;
+  }[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuthContext();
 

@@ -3,10 +3,26 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
+import { useRouter } from 'next/navigation';
+import supabase from '@/utils/supabase';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user } = useAuthContext();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleSignOut = async () => {
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <header className="bg-white fixed top-0 w-full z-10">
@@ -40,9 +56,18 @@ export default function Header() {
             Post Sublease
           </Link>
           {user ? (
-            <Link href="/profile" className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors">
-              My Profile
-            </Link>
+            <>
+              <Link href="/profile" className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors">
+                My Profile
+              </Link>
+              <button 
+                onClick={handleSignOut}
+                disabled={loading}
+                className="px-4 py-2 text-error border border-error rounded-md hover:bg-error/10 transition-colors"
+              >
+                {loading ? 'Signing out...' : 'Sign Out'}
+              </button>
+            </>
           ) : (
             <Link href="/auth" className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors">
               Sign In
@@ -70,13 +95,22 @@ export default function Header() {
               Post Sublease
             </Link>
             {user ? (
-              <Link 
-                href="/profile"
-                className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                My Profile
-              </Link>
+              <>
+                <Link 
+                  href="/profile"
+                  className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  My Profile
+                </Link>
+                <button 
+                  onClick={handleSignOut}
+                  disabled={loading}
+                  className="px-4 py-2 text-error border border-error rounded-md hover:bg-error/10 transition-colors"
+                >
+                  {loading ? 'Signing out...' : 'Sign Out'}
+                </button>
+              </>
             ) : (
               <Link 
                 href="/auth"

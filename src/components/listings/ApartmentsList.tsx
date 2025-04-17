@@ -17,7 +17,7 @@ export default function ApartmentsList() {
     };
 
     fetchApartments();
-  }, []);
+  }, [getApartments]);
 
   if (loading) {
     return <div className="text-center py-8">Loading apartments...</div>;

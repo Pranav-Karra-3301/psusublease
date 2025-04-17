@@ -21,7 +21,7 @@ const mockListings = [
     description: 'Spacious 2-bedroom apartment in the heart of downtown State College. Walking distance to campus and all amenities. Fully furnished with modern appliances.',
     amenities: ['In-unit Washer/Dryer', 'Fully Furnished', 'Gym Access', 'Pool', 'High-Speed Internet', 'Parking Included'],
     hasRoommates: true,
-    roommatesStaying: false,
+    roommatesStaying: 0,
     genderPreference: 'No Preference',
     images: ['/placeholder.jpg', '/placeholder.jpg', '/placeholder.jpg'],
     contactInfo: {
@@ -42,9 +42,12 @@ const mockListings = [
     description: 'Modern 1-bedroom apartment with amazing views of downtown. Luxury finishes throughout.',
     amenities: ['In-unit Washer/Dryer', 'Fully Furnished', 'Gym Access', 'Rooftop Deck'],
     hasRoommates: false,
+    roommatesStaying: 0,
+    genderPreference: 'No Preference',
     images: ['/placeholder.jpg', '/placeholder.jpg'],
     contactInfo: {
       email: 'grad@psu.edu',
+      phone: '',
       preferredContact: 'Email'
     }
   },
@@ -60,10 +63,11 @@ const mockListings = [
     description: 'Affordable 3-bedroom apartment perfect for students. Recently renovated with new appliances.',
     amenities: ['Fully Furnished', 'Free Parking', 'Bus Route'],
     hasRoommates: true,
-    roommatesStaying: true,
+    roommatesStaying: 2,
     genderPreference: 'Female',
     images: ['/placeholder.jpg'],
     contactInfo: {
+      email: '',
       phone: '814-555-5678',
       preferredContact: 'Phone'
     }
@@ -73,7 +77,23 @@ const mockListings = [
 export default function ListingPage() {
   const params = useParams();
   const { id } = params;
-  const [listing, setListing] = useState<any>(null);
+  const [listing, setListing] = useState<{
+    id: string;
+    apartment: string;
+    location: string;
+    price: number;
+    startDate: string;
+    endDate: string;
+    bedrooms: number;
+    bathrooms: number;
+    description: string;
+    amenities: string[];
+    hasRoommates: boolean;
+    roommatesStaying: number;
+    genderPreference: string;
+    images: string[];
+    contactInfo: { email?: string; phone?: string; preferredContact?: string };
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   // Simulate fetching data

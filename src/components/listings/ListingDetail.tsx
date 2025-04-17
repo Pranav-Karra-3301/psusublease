@@ -17,7 +17,7 @@ interface ListingDetailProps {
   description?: string;
   amenities?: string[];
   hasRoommates?: boolean;
-  roommatesStaying?: boolean;
+  roommatesStaying?: number | boolean;
   genderPreference?: string;
   images?: string[];
   contactInfo?: {
@@ -149,7 +149,9 @@ export default function ListingDetail({
               </p>
               <p className="text-text-secondary">
                 <span className="text-text-primary font-medium">Roommates Staying: </span>
-                {roommatesStaying ? 'Yes' : 'No'}
+                {typeof roommatesStaying === 'boolean' 
+                  ? (roommatesStaying ? 'Yes' : 'No')
+                  : (roommatesStaying > 0 ? `Yes (${roommatesStaying})` : 'No')}
               </p>
               {genderPreference && (
                 <p className="text-text-secondary">
@@ -252,11 +254,11 @@ export default function ListingDetail({
           )}
         </Card>
         
-        <Card variant="outline" className="text-center p-4">
+        <Card variant="default" className="text-center p-4">
           <div className="text-sm text-text-secondary">
             <p className="mb-2">Report this listing</p>
             <button className="text-error hover:underline">
-              Report suspicious activity
+              Flag as inappropriate
             </button>
           </div>
         </Card>

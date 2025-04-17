@@ -79,7 +79,7 @@ const mockListings = [
 
 export default function ListingsPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [listings, setListings] = useState(mockListings);
+  const [listings] = useState(mockListings);
   const [filteredListings, setFilteredListings] = useState(mockListings);
   const [isLoading, setIsLoading] = useState(false);
   

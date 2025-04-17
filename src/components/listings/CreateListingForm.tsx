@@ -180,7 +180,7 @@ export default function CreateListingForm() {
         throw new Error('Failed to create listing: No data returned');
       }
       
-      let listingId = insertedData.id;
+      const listingId = insertedData.id;
       
       // Upload images if there are any
       const imageUrls = [];
@@ -192,7 +192,7 @@ export default function CreateListingForm() {
             .from('listing-images')
             .upload(filename, image, {
               upsert: true,
-              fileMetadata: {
+              metadata: {
                 contentType: image.type,
               },
             });
@@ -501,7 +501,7 @@ export default function CreateListingForm() {
                   Upload photos of your apartment to attract more interest. Include images of the bedroom, bathroom, living area, and any special features.
                 </p>
                 
-                <Card variant="outline" className="p-8 text-center">
+                <Card variant="default" className="p-8 text-center">
                   <input
                     type="file"
                     id="images"

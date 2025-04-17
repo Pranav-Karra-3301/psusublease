@@ -7,7 +7,6 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import ListingCard from '@/components/listings/ListingCard';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import supabase from '@/utils/supabase';
 
@@ -41,6 +40,11 @@ export default function ProfilePage() {
       setProfileLoading(true);
       
       try {
+        if (!user) {
+          console.error('No user found');
+          return;
+        }
+        
         // Get user profile data
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -68,7 +72,7 @@ export default function ProfilePage() {
             } else {
               // Set default user data
               setUserData({
-                id: user.id,
+                id: user.id || '',
                 name: '',
                 email: user.email || '',
                 phone: '',
@@ -80,7 +84,7 @@ export default function ProfilePage() {
           }
         } else if (profileData) {
           setUserData({
-            id: user.id,
+            id: user.id || '',
             name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim(),
             email: user.email || '',
             phone: profileData.phone || '',
@@ -98,6 +102,11 @@ export default function ProfilePage() {
       setLoading(true);
       
       try {
+        if (!user) {
+          console.error('No user found');
+          return;
+        }
+        
         // Get user listings
         const { data: listingsData, error: listingsError } = await supabase
           .from('listings')
@@ -180,13 +189,21 @@ export default function ProfilePage() {
       return;
     }
     
+    if (!user) {
+      setMessage({
+        text: 'You must be logged in to delete your account',
+        type: 'error'
+      });
+      return;
+    }
+    
     setLoading(true);
     setMessage(null);
     
     try {
       // Delete all user data using our secure function
-      const { error: deleteError } = await supabase
-        .rpc('delete_user_data', { user_id: user?.id });
+      const { error: deleteError } = await (supabase as any)
+        .rpc('delete_user_data', { user_id: user.id });
       
       if (deleteError) {
         console.error('Error deleting user data:', deleteError);
@@ -196,9 +213,9 @@ export default function ProfilePage() {
       // Delete any uploaded images from storage
       try {
         // Use our custom function to delete user's files by path
-        const { error: deleteFilesError } = await supabase
+        const { error: deleteFilesError } = await (supabase as any)
           .rpc('delete_storage_object_by_path', { 
-            path_prefix: `${user?.id}/`, 
+            path_prefix: `${user.id}/`, 
             bucket_id: 'listing-images' 
           });
           
@@ -549,13 +566,13 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ) : (
-                <Button 
-                  variant="danger" 
-                  size="sm"
+                <Button
+                  variant="danger"
                   onClick={handleDeleteAccount}
-                  disabled={loading}
+                  fullWidth
+                  className="mt-6"
                 >
-                  Delete Account
+                  {confirmDelete ? "Yes, I&apos;m sure, delete my account" : "Delete Account"}
                 </Button>
               )}
             </div>

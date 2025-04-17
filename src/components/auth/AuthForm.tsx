@@ -198,7 +198,7 @@ export default function AuthForm() {
             onClick={() => setMode('signup')}
             className="text-primary hover:underline"
           >
-            Don't have an account? Sign Up
+            Don&apos;t have an account? Sign Up
           </button>
         ) : (
           <button 
