@@ -24,6 +24,7 @@ export default function ProfilePage() {
     email: '',
     phone: '',
     preferredContact: 'email',
+    userType: 'tenant',
   });
   const [listings, setListings] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
@@ -69,7 +70,8 @@ export default function ProfilePage() {
                 last_name: '',
                 phone: '',
                 email: user.email,
-                preferred_contact: 'email'
+                preferred_contact: 'email',
+                user_type: 'tenant'
               });
             
             if (insertError) {
@@ -82,6 +84,7 @@ export default function ProfilePage() {
                 email: user.email || '',
                 phone: '',
                 preferredContact: 'email',
+                userType: 'tenant',
               });
             }
           } else {
@@ -94,6 +97,7 @@ export default function ProfilePage() {
             email: user.email || '',
             phone: profileData.phone || '',
             preferredContact: profileData.preferred_contact || 'email',
+            userType: profileData.user_type || 'tenant',
           });
         }
       } catch (error) {
@@ -194,6 +198,7 @@ export default function ProfilePage() {
           last_name: userData.name.split(' ').slice(1).join(' ') || '',
           phone: userData.phone,
           preferred_contact: userData.preferredContact,
+          user_type: userData.userType,
         });
       
       if (error) throw error;
@@ -381,6 +386,17 @@ export default function ProfilePage() {
             ]}
           />
           
+          <Select
+            label="Account Type"
+            name="userType"
+            value={userData.userType}
+            onChange={handleInputChange}
+            options={[
+              { value: 'tenant', label: 'Tenant/Student' },
+              { value: 'agency', label: 'Property Manager' },
+            ]}
+          />
+          
           <div className="flex justify-end space-x-3 pt-4">
             <Button 
               variant="secondary"
@@ -420,6 +436,11 @@ export default function ProfilePage() {
         <div>
           <h3 className="text-text-secondary text-sm">Preferred Contact Method</h3>
           <p className="text-text-primary capitalize">{userData.preferredContact}</p>
+        </div>
+        
+        <div>
+          <h3 className="text-text-secondary text-sm">Account Type</h3>
+          <p className="text-text-primary capitalize">{userData.userType === 'tenant' ? 'Tenant/Student' : 'Property Manager'}</p>
         </div>
         
         <div className="pt-4">

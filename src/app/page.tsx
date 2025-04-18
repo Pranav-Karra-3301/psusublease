@@ -62,7 +62,7 @@ export default function Home() {
             <div className="max-w-3xl flex-1">
               
               <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-8 leading-tight">
-                Find Your Perfect <br/><span className="text-primary">PSU Sublease</span>
+                Find Your Perfect <br/><span className="text-primary">Lease / Relet</span>
               </h1>
               <p className="text-xl text-gray-700 mb-10 max-w-2xl leading-relaxed">
                 Connect directly with Penn State students to find or post subleases without the middleman.
@@ -78,12 +78,17 @@ export default function Home() {
                     Post Sublease
                   </Button>
                 </Link>
+                <Link href="/auth-portal">
+                  <Button size="lg" variant="outline" className="py-4 px-8 rounded-md border border-primary bg-white text-primary shadow-sm">
+                    Sign In / Sign Up
+                  </Button>
+                </Link>
               </div>
             </div>
             {/* Right: Preview Image */}
             <div className="flex-1 w-full md:w-auto flex items-center justify-center">
               <Image
-                src="/preview.png"
+                src="/lion.png"
                 alt="Preview"
                 width={600}
                 height={400}
@@ -416,6 +421,11 @@ export default function Home() {
             <Link href="/requests">
               <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-transparent border-2 border-white hover:bg-white/10 text-white">
                 View Requests
+              </Button>
+            </Link>
+            <Link href="/auth-portal">
+              <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-primary/20 border-2 border-white text-white">
+                Sign In / Sign Up
               </Button>
             </Link>
           </div>
