@@ -336,8 +336,10 @@ export function useAgencies() {
 
       return data as Agency;
     } catch (error: any) {
-      setError(error.message);
-      console.error('Error fetching user agency:', error);
+      setError(error.message || 'Unknown error fetching agency');
+      // Safely stringify the error object for logging
+      const errorStr = JSON.stringify(error, Object.getOwnPropertyNames(error) || {});
+      console.error('Error fetching user agency:', errorStr);
       return null;
     } finally {
       setLoading(false);

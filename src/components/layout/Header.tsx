@@ -19,8 +19,13 @@ export default function Header() {
   useEffect(() => {
     const checkAgencyStatus = async () => {
       if (user) {
-        const agency = await fetchMyAgency();
-        setIsAgency(!!agency);
+        try {
+          const agency = await fetchMyAgency();
+          setIsAgency(!!agency);
+        } catch (error) {
+          console.error('Error checking agency status:', error);
+          setIsAgency(false);
+        }
       } else {
         setIsAgency(false);
       }
