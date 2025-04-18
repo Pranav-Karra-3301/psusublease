@@ -10,12 +10,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
     url: supabaseUrl ? 'defined' : 'missing',
     key: supabaseAnonKey ? 'defined' : 'missing'
   });
+  throw new Error('Supabase environment variables are missing');
 }
 
+// Create Supabase client with better configuration
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    storageKey: 'psusublease-auth',
+    detectSessionInUrl: true,
   },
   realtime: {
     params: {
@@ -27,6 +31,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-console.log('Supabase client initialized with URL:', supabaseUrl);
+// Log initialization status in development
+if (process.env.NODE_ENV !== 'production') {
+  console.log('Supabase client initialized with URL:', supabaseUrl);
+}
 
 export default supabase; 

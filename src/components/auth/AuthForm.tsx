@@ -34,6 +34,27 @@ export default function AuthForm() {
     setLoading(true);
     setMessage(null);
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setMessage({
+        text: 'Please enter a valid email address',
+        type: 'error'
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Validate password
+    if (password.length < 6) {
+      setMessage({
+        text: 'Password must be at least 6 characters long',
+        type: 'error'
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       let result;
       
@@ -59,7 +80,10 @@ export default function AuthForm() {
               preferred_contact: 'email'
             });
             
-          if (error) throw new Error('Failed to update profile information');
+          if (error) {
+            console.error('Profile update error:', error);
+            throw new Error('Failed to update profile information: ' + error.message);
+          }
         }
       }
 
@@ -77,9 +101,27 @@ export default function AuthForm() {
       setPassword('');
       setName('');
       setPhone('');
+      
+      // If signed up, switch to sign in mode
+      if (mode === 'signup') {
+        setMode('signin');
+      }
     } catch (error: any) {
+      console.error('Auth error:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = error.message;
+      
+      if (errorMessage.includes('User already registered')) {
+        errorMessage = 'This email is already registered. Please sign in instead.';
+      } else if (errorMessage.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please try again.';
+      } else if (errorMessage.includes('Email not confirmed')) {
+        errorMessage = 'Please verify your email before signing in. Check your inbox for a confirmation link.';
+      }
+      
       setMessage({
-        text: error.message,
+        text: errorMessage,
         type: 'error'
       });
     } finally {
