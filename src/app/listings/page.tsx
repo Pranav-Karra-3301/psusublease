@@ -106,9 +106,9 @@ export default function ListingsPage() {
         
         if (error) {
           console.error('Error fetching listings:', error);
-          // Fall back to mock data if there's an error
-          setListings(mockListings);
-          setFilteredListings(mockListings);
+          // Show empty state instead of mock data
+          setListings([]);
+          setFilteredListings([]);
           return;
         }
         
@@ -134,18 +134,18 @@ export default function ListingsPage() {
             setFilteredListings(transformedListings);
           }
         } else {
-          // If no data, fall back to mock data
+          // Return empty array if no listings found
           if (isMounted) {
-            setListings(mockListings);
-            setFilteredListings(mockListings);
+            setListings([]);
+            setFilteredListings([]);
           }
         }
       } catch (err) {
         console.error('Error in fetchListings:', err);
-        // Fall back to mock data if there's an exception
+        // Show empty state instead of mock data
         if (isMounted) {
-          setListings(mockListings);
-          setFilteredListings(mockListings);
+          setListings([]);
+          setFilteredListings([]);
         }
       } finally {
         if (isMounted) {

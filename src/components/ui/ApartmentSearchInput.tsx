@@ -47,6 +47,8 @@ export default function ApartmentSearchInput({
         const selectedApartment = apartments.find(apt => apt.id === value);
         if (selectedApartment) {
           setSearchQuery(selectedApartment.name);
+        } else {
+          setSearchQuery('');
         }
       }
     }
@@ -151,6 +153,25 @@ export default function ApartmentSearchInput({
     return apartments.slice(0, 3);
   };
 
+  // Make sure the dropdown includes the custom option at the end of the search results
+  const renderCustomOption = () => {
+    if (!customOption) return null;
+    
+    return (
+      <div 
+        className="flex items-center hover:bg-bg-hover rounded-lg cursor-pointer p-4"
+        onClick={handleSelectCustom}
+      >
+        <div className="w-10 h-10 mr-3 flex-shrink-0 bg-gray-100 rounded-full flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-text-secondary">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+          </svg>
+        </div>
+        <div className="font-medium text-text-primary">My apartment is not listed</div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full" ref={inputRef}>
       {label && (
@@ -216,6 +237,7 @@ export default function ApartmentSearchInput({
                   {filteredApartments.length > 0 ? 'Search results' : 'No results found'}
                 </h3>
                 <div className="space-y-4">
+                  {customOption && renderCustomOption()}
                   {filteredApartments.map((apt) => (
                     <div 
                       key={apt.id} 
@@ -304,16 +326,6 @@ export default function ApartmentSearchInput({
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-            
-            {/* Custom Option */}
-            {customOption && (
-              <div 
-                className="p-4 border-t border-border-light hover:bg-bg-hover cursor-pointer"
-                onClick={handleSelectCustom}
-              >
-                <div className="font-medium text-text-primary">My apartment is not listed</div>
               </div>
             )}
           </div>
