@@ -13,9 +13,32 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'PSU Sublease',
-  description: 'Find and post Penn State subleases',
+  title: 'PSU Leases',
+  description: 'Find and post Penn State leases and subleases',
   metadataBase: new URL("https://psusublease.vercel.app"),
+  openGraph: {
+    title: 'PSU Leases',
+    description: 'Find and post Penn State leases and subleases',
+    url: 'https://psusublease.vercel.app',
+    siteName: 'PSU Leases',
+    images: [
+      {
+        url: '/preview_small.png',
+        width: 800,
+        height: 600,
+        alt: 'PSU Leases Preview',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PSU Leases',
+    description: 'Find and post Penn State leases and subleases',
+    images: ['/preview_small.png'],
+    site: '@psusublease',
+  },
 };
 
 export default function RootLayout({

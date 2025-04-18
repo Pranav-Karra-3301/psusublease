@@ -2,16 +2,32 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import supabase from '@/utils/supabase';
+import { useAgencies } from '@/hooks/useAgencies';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user } = useAuthContext();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [isAgency, setIsAgency] = useState(false);
+  const { fetchMyAgency } = useAgencies();
+
+  useEffect(() => {
+    const checkAgencyStatus = async () => {
+      if (user) {
+        const agency = await fetchMyAgency();
+        setIsAgency(!!agency);
+      } else {
+        setIsAgency(false);
+      }
+    };
+
+    checkAgencyStatus();
+  }, [user, fetchMyAgency]);
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -31,132 +47,163 @@ export default function Header() {
         <Link href="/" className="flex items-center space-x-2">
           <Image 
             src="/oldmain.png" 
-            alt="PSU Sublease Lion Logo" 
+            alt="PSU Leases Logo" 
             width={40} 
             height={40} 
             className="rounded-md"
           />
-          <span className="text-xl font-semibold tracking-wide" style={{ letterSpacing: '0.05em' }}>
-            <span className="text-primary">PSU</span><span className="text-accent">Sublease</span>
-          </span>
+          <Image
+            src="/header-title.png"
+            alt="PSU Leases"
+            width={140}
+            height={32}
+            className="ml-2"
+            priority
+          />
         </Link>
         
         {/* Mobile menu button */}
-        <button 
-          className="md:hidden text-text-primary"
+        <button
+          className="md:hidden"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
-          {isMenuOpen ? (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          )}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
+            />
+          </svg>
         </button>
         
         {/* Desktop navigation */}
-        <nav className="hidden md:flex items-center gap-4">
-          <div className="flex gap-2">
-            <Link href="/listings" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
-              Browse Listings
-            </Link>
-            <Link href="/requests" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
-              Browse Requests
-            </Link>
-          </div>
-          <div className="flex gap-2">
-            <Link href="/create" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
-              Post Sublease
-            </Link>
-            <Link href="/requests/create" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
-              Post Request
-            </Link>
-          </div>
+        <nav className="hidden md:flex items-center space-x-1">
+          <Link href="/listings" className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
+            Listings
+          </Link>
+          <Link href="/requests" className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
+            Requests
+          </Link>
           {user ? (
             <>
-              <Link href="/profile" className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors">
-                My Profile
-              </Link>
-              <button 
-                onClick={handleSignOut}
-                disabled={loading}
-                className="px-4 py-2 text-error border border-error rounded-md hover:bg-error/10 transition-colors"
-              >
-                {loading ? 'Signing out...' : 'Sign Out'}
-              </button>
+              {isAgency ? (
+                <div className="relative group">
+                  <button className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
+                    Agency
+                  </button>
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-border-light rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="py-1">
+                      <Link href="/agency/dashboard" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
+                        Dashboard
+                      </Link>
+                      <Link href="/agency/create-listing" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
+                        Create Listing
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Link href="/agency/register" className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
+                  Property Managers
+                </Link>
+              )}
+              <div className="relative group">
+                <button className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
+                  Account
+                </button>
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-border-light rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <Link href="/profile" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
+                      Profile
+                    </Link>
+                    <Link href="/create" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
+                      Create Sublease
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="block w-full text-left px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent disabled:opacity-50"
+                      disabled={loading}
+                    >
+                      {loading ? 'Signing out...' : 'Sign out'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </>
           ) : (
-            <Link href="/auth" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
-              Sign In
-            </Link>
+            <>
+              <Link href="/auth/signin" className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
+                Sign in
+              </Link>
+              <Link href="/auth/signup" className="ml-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors">
+                Sign up
+              </Link>
+            </>
           )}
         </nav>
-      </div>
-      
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-white shadow-md">
-          <div className="container mx-auto px-4 py-4 flex flex-col gap-2">
-            <Link 
-              href="/listings" 
-              className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Browse Listings
-            </Link>
-            <Link 
-              href="/requests" 
-              className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Browse Requests
-            </Link>
-            <Link 
-              href="/create" 
-              className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Post Sublease
-            </Link>
-            <Link 
-              href="/requests/create" 
-              className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Post Request
-            </Link>
-            {user ? (
-              <>
-                <Link 
-                  href="/profile"
-                  className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  My Profile
-                </Link>
-                <button 
-                  onClick={handleSignOut}
-                  disabled={loading}
-                  className="px-4 py-2 text-error border border-error rounded-md hover:bg-error/10 transition-colors"
-                >
-                  {loading ? 'Signing out...' : 'Sign Out'}
-                </button>
-              </>
-            ) : (
-              <Link 
-                href="/auth"
-                className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Sign In
+        
+        {/* Mobile navigation */}
+        {isMenuOpen && (
+          <div className="absolute top-full left-0 right-0 bg-white border-t border-border-light md:hidden z-50">
+            <div className="container mx-auto px-4 py-2">
+              <Link href="/listings" className="block py-3 border-b border-border-light">
+                Listings
               </Link>
-            )}
+              <Link href="/requests" className="block py-3 border-b border-border-light">
+                Requests
+              </Link>
+              {user ? (
+                <>
+                  {isAgency ? (
+                    <>
+                      <div className="py-3 border-b border-border-light font-medium">Agency</div>
+                      <Link href="/agency/dashboard" className="block py-3 pl-4 border-b border-border-light">
+                        Dashboard
+                      </Link>
+                      <Link href="/agency/create-listing" className="block py-3 pl-4 border-b border-border-light">
+                        Create Listing
+                      </Link>
+                    </>
+                  ) : (
+                    <Link href="/agency/register" className="block py-3 border-b border-border-light">
+                      Property Managers
+                    </Link>
+                  )}
+                  <Link href="/profile" className="block py-3 border-b border-border-light">
+                    Profile
+                  </Link>
+                  <Link href="/create" className="block py-3 border-b border-border-light">
+                    Create Sublease
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="block w-full text-left py-3 text-text-primary disabled:opacity-50"
+                    disabled={loading}
+                  >
+                    {loading ? 'Signing out...' : 'Sign out'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth/signin" className="block py-3 border-b border-border-light">
+                    Sign in
+                  </Link>
+                  <Link href="/auth/signup" className="block py-3">
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </header>
   );
 } 

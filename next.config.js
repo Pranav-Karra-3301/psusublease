@@ -7,7 +7,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['localhost', 'xjwndkjwaxhxqtmfeulp.supabase.co', 'jbbdxvmlktaqapclgolt.supabase.co', 'psusublease.vercel.app'],
+    domains: ['localhost', 'xjwndkjwaxhxqtmfeulp.supabase.co', 'jbbdxvmlktaqapclgolt.supabase.co', 'psusublease.vercel.app', 'images.unsplash.com'],
   },
 };
 

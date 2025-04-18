@@ -12,15 +12,15 @@ export default function Footer() {
             <div className="flex items-center gap-2 mb-2">
               <Image 
                 src="/psusubleaseLogo.png" 
-                alt="PSU Sublease Lion Logo" 
+                alt="PSU Leases Logo" 
                 width={30} 
                 height={30} 
                 className="rounded-md"
               />
-              <h3 className="text-lg font-semibold text-text-primary">PSU<span className="text-accent">Sublease</span></h3>
+              <h3 className="text-lg font-semibold text-text-primary">PSU<span className="text-accent">Leases</span></h3>
             </div>
             <p className="text-sm text-text-secondary">
-              Find and post subleases near Penn State University Park campus.
+              Find and post leases and subleases near Penn State University Park campus.
             </p>
           </div>
           
@@ -58,22 +58,22 @@ export default function Footer() {
         
         <div className="mt-8 pt-6 border-t border-border-light">
           <p className="text-xs text-text-secondary leading-relaxed">
-            <strong className="text-text-primary">Disclaimer:</strong> PSU Sublease is not officially associated with Penn State University. 
-            This platform was built by students to help the Penn State community find and list subleases. 
+            <strong className="text-text-primary">Disclaimer:</strong> PSU Leases is not officially associated with Penn State University. 
+            This platform was built by students to help the Penn State community find and list leases and subleases. 
             This is solely an aggregator of listings - no financial transactions occur on this platform. 
             Users are responsible for all arrangements and transactions outside of this site. 
             We attempt to verify users but cannot be held responsible for fraudulent listings. 
             Use caution when contacting listers.
           </p>
           <p className="text-xs text-text-secondary mt-4">
-            © {new Date().getFullYear()} PSU Sublease. All rights reserved.
+            © {new Date().getFullYear()} PSU Leases. All rights reserved.
           </p>
         </div>
       </div>
       <div className="w-full">
         <Image 
           src="/lionFore.png" 
-          alt="PSU Sublease Lion Logo" 
+          alt="PSU Leases Lion Logo" 
           width={1200} 
           height={600} 
           className="w-full max-w-none"
