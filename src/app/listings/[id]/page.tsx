@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import ListingDetail from '@/components/listings/ListingDetail';
 import Button from '@/components/ui/Button';
@@ -77,7 +77,7 @@ const mockListings = [
   }
 ];
 
-export default function ListingPage() {
+function ListingPageContent() {
   const params = useParams();
   const { id } = params;
   const { user } = useAuthContext();
@@ -274,5 +274,13 @@ export default function ListingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ListingPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8 text-center">Loading listing details...</div>}>
+      <ListingPageContent />
+    </Suspense>
   );
 } 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
@@ -8,8 +8,9 @@ import Card from '@/components/ui/Card';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import supabase from '@/utils/supabase';
 import { formatDateRange, formatDate } from '@/utils/formatters';
+import RequestDetail from '@/components/requests/RequestDetail';
 
-export default function RequestDetailsPage() {
+function RequestPageContent() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthContext();
@@ -294,5 +295,13 @@ export default function RequestDetailsPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function RequestPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8 text-center">Loading request details...</div>}>
+      <RequestPageContent />
+    </Suspense>
   );
 } 

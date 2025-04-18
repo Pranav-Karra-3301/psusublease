@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import supabase from '../utils/supabase';
 import { Database } from '../types/database.types';
 
@@ -65,6 +65,8 @@ export function useListings() {
     setError(null);
     
     try {
+      console.log('Creating listing with data:', listing);
+      
       const { data, error } = await supabase
         .from('listings')
         .insert(listing)
@@ -74,13 +76,17 @@ export function useListings() {
         `)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
       
       return { data, error: null };
     } catch (err: any) {
       console.error('Error in createListing:', err);
-      setError(err.message);
-      return { data: null, error: err.message };
+      const errorMessage = err.message || 'Unknown error occurred during listing creation';
+      setError(errorMessage);
+      return { data: null, error: errorMessage };
     } finally {
       setLoading(false);
     }

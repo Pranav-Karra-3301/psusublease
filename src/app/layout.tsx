@@ -1,85 +1,41 @@
-import type { Metadata } from "next";
-import { Inter, VT323, Pixelify_Sans } from "next/font/google";
-import "./globals.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import './globals.css';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 import AuthProvider from "@/components/auth/AuthProvider";
 import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const vt323 = VT323({
-  weight: '400',
-  subsets: ["latin"],
-  variable: "--font-vt323",
-  display: "swap",
-});
-
-const pixelifySans = Pixelify_Sans({
-  weight: ['400', '500', '600', '700'],
-  subsets: ["latin"],
-  variable: "--font-pixelify-sans",
-  display: "swap",
+  subsets: ['latin'],
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
-  title: "PSU Sublease | Find & Post Subleases at Penn State",
-  description: "Penn State University's student-built sublease platform. Browse, post, and find subleases near PSU University Park campus.",
-  icons: {
-    icon: '/lion.png',
-    apple: '/lion.png',
-  },
-  openGraph: {
-    title: "PSU Sublease | Find & Post Subleases at Penn State",
-    description: "Penn State University's student-built sublease platform. Browse, post, and find subleases near PSU University Park campus.",
-    url: "https://psusublease.vercel.app/",
-    siteName: "PSU Sublease",
-    images: [
-      {
-        url: "/preview_small.png",
-        width: 600,
-        height: 600,
-        alt: "PSU Sublease Preview",
-        type: "image/png"
-      }
-    ],
-    locale: "en_US",
-    type: "website"
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "PSU Sublease | Find & Post Subleases at Penn State",
-    description: "Penn State University's student-built sublease platform. Browse, post, and find subleases near PSU University Park campus.",
-    images: [
-      {
-        url: "/preview_small.png",
-        alt: "PSU Sublease Preview"
-      }
-    ]
-  },
+  title: 'PSU Sublease',
+  description: 'Find and post Penn State subleases',
   metadataBase: new URL("https://psusublease.vercel.app"),
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${vt323.variable} ${pixelifySans.variable} antialiased min-h-screen flex flex-col`}>
+      <body className={`${inter.variable} font-sans`}>
         <AuthProvider>
-          <Header />
-          <main className="flex-grow pt-16">
-            {children}
-          </main>
-          <Footer />
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-grow pt-16">
+              {children}
+            </main>
+            <Footer />
+          </div>
+          <Analytics />
         </AuthProvider>
-        <Analytics />
       </body>
     </html>
   );

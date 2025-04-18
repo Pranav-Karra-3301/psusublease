@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import Button from '@/components/ui/Button';
@@ -10,14 +10,14 @@ import { useListings } from '@/hooks/useListings';
 import CreateListingForm from '@/components/listings/CreateListingForm';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 
-export default function EditListingPage() {
+function EditListingContent() {
   const params = useParams();
   const { id } = params;
   const router = useRouter();
   const { user } = useAuthContext();
   const [isLoading, setIsLoading] = useState(true);
   const [listing, setListing] = useState(null);
-  const [error, setError] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const { getListing } = useListings();
 
   // Check for authentication first
@@ -38,7 +38,6 @@ export default function EditListingPage() {
       if (!isMounted) return;
       
       setIsLoading(true);
-      setError(null);
       
       try {
         const { data, error } = await getListing(id as string);
@@ -140,5 +139,13 @@ export default function EditListingPage() {
         <CreateListingForm initialData={listing} isEditMode={true} />
       </div>
     </div>
+  );
+}
+
+export default function EditListingPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8 text-center">Loading edit form...</div>}>
+      <EditListingContent />
+    </Suspense>
   );
 } 

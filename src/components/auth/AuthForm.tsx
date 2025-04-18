@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/utils/supabase';
 import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -17,6 +18,16 @@ export default function AuthForm() {
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   
   const { signIn, signUp, signOut, user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get('redirect');
+
+  // Redirect user when logged in and redirect parameter exists
+  useEffect(() => {
+    if (user && redirectPath) {
+      router.push(redirectPath);
+    }
+  }, [user, redirectPath, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
