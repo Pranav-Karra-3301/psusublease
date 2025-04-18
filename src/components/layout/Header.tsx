@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
@@ -27,8 +28,17 @@ export default function Header() {
   return (
     <header className="bg-white fixed top-0 w-full z-10">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <Link href="/" className="text-xl font-semibold text-primary">
-          PSU<span className="text-accent">Sublease</span>
+        <Link href="/" className="flex items-center space-x-2">
+          <Image 
+            src="/psusubleaseLogo.png" 
+            alt="PSU Sublease Lion Logo" 
+            width={40} 
+            height={40} 
+            className="rounded-md"
+          />
+          <span className="text-xl font-semibold font-vt323 tracking-wide" style={{ letterSpacing: '0.05em' }}>
+            <span className="text-primary">PSU</span><span className="text-accent">Sublease</span>
+          </span>
         </Link>
         
         {/* Mobile menu button */}
@@ -49,12 +59,22 @@ export default function Header() {
         
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-4">
-          <Link href="/listings" className="px-4 py-2 rounded-md hover:bg-bg-secondary transition-colors">
-            Browse
-          </Link>
-          <Link href="/create" className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors">
-            Post Sublease
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/listings" className="px-4 py-2 rounded-md hover:bg-bg-secondary transition-colors">
+              Browse Listings
+            </Link>
+            <Link href="/requests" className="px-4 py-2 rounded-md hover:bg-bg-secondary transition-colors">
+              Browse Requests
+            </Link>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/create" className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors">
+              Post Sublease
+            </Link>
+            <Link href="/requests/create" className="px-4 py-2 bg-accent text-white rounded-md hover:bg-accent/90 transition-colors">
+              Post Request
+            </Link>
+          </div>
           {user ? (
             <>
               <Link href="/profile" className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors">
@@ -85,7 +105,14 @@ export default function Header() {
               className="px-4 py-2 hover:bg-bg-secondary rounded-md transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
-              Browse
+              Browse Listings
+            </Link>
+            <Link 
+              href="/requests" 
+              className="px-4 py-2 hover:bg-bg-secondary rounded-md transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Browse Requests
             </Link>
             <Link 
               href="/create" 
@@ -93,6 +120,13 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               Post Sublease
+            </Link>
+            <Link 
+              href="/requests/create" 
+              className="px-4 py-2 bg-accent text-white rounded-md hover:bg-accent/90 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Post Request
             </Link>
             {user ? (
               <>

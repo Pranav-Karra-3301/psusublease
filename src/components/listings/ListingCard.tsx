@@ -26,8 +26,27 @@ export default function ListingCard({
   endDate,
   bedrooms,
   bathrooms,
-  image = '/placeholder.jpg',
+  image = '/apt_defaults/default.png',
 }: ListingCardProps) {
+  // Format date range safely
+  const formatDateRange = (startDateString: string, endDateString: string) => {
+    try {
+      const startDate = new Date(startDateString);
+      const endDate = new Date(endDateString);
+      
+      // Check if dates are valid
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return 'Invalid date range';
+      }
+      
+      return `${startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - 
+              ${endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    } catch (error) {
+      console.error('Error formatting date range:', error);
+      return 'Invalid date range';
+    }
+  };
+
   return (
     <Card variant="glass" className="overflow-hidden flex flex-col h-full">
       <div className="h-48 bg-bg-secondary relative -mx-6 -mt-6 mb-4">
@@ -50,8 +69,7 @@ export default function ListingCard({
       <div className="flex justify-between items-center mb-4">
         <span className="text-accent text-xl font-bold">${price}/mo</span>
         <span className="text-text-secondary text-sm">
-          {new Date(startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - 
-          {new Date(endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+          {formatDateRange(startDate, endDate)}
         </span>
       </div>
       

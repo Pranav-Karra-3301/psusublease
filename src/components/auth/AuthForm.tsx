@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/utils/supabase';
+import Image from 'next/image';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -116,7 +117,17 @@ export default function AuthForm() {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light p-6 max-w-md mx-auto mt-8">
-      <h2 className="text-2xl font-bold mb-4">
+      <div className="flex justify-center mb-6">
+        <Image 
+          src="/lion.png" 
+          alt="PSU Sublease Lion Logo" 
+          width={80} 
+          height={80} 
+          className="rounded-md"
+        />
+      </div>
+      
+      <h2 className="text-2xl font-bold mb-4 text-center">
         {mode === 'signin' ? 'Sign In' : 'Sign Up'}
       </h2>
       

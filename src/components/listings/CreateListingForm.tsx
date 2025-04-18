@@ -1,21 +1,91 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import supabase from '@/utils/supabase';
+import ApartmentSearchInput from '@/components/ui/ApartmentSearchInput';
+import { useApartments } from '@/hooks/useApartments';
+import { useListings } from '@/hooks/useListings';
 
-// Mock apartment data
-const apartments = [
-  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', name: 'The Rise', address: '111 Beaver Ave, State College, PA' },
-  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', name: 'The Metropolitan', address: '400 W College Ave, State College, PA' },
-  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', name: 'The Legacy', address: '478 E Beaver Ave, State College, PA' },
-  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', name: 'Calder Commons', address: '511 E Calder Way, State College, PA' },
-  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15', name: 'The Station', address: '330 W College Ave, State College, PA' },
-  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16', name: 'Here State College', address: '131 Hiester St, State College, PA' },
+// Default apartments for fallback
+const defaultApartments = [
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', name: 'Alight State College', address: '348 Blue Course Dr.', website: 'https://alight-statecollege.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', name: 'Allen Park', address: '1013 S. Allen and Westerly Parkway', website: 'https://www.lenwoodinc.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', name: 'Ambassador', address: '421 E. Beaver Ave', website: 'https://www.arpm.com/property/ambassador/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', name: 'Alexander Court', address: '309 E Beaver St, State College', website: 'https://www.livethecanyon.com/alexander-court', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15', name: 'Armenara Plaza', address: '131 Sowers Street - near Pollack and Beaver', website: 'https://www.arpm.com/property/armenara-plaza/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16', name: 'Barcroft', address: '522 E. College Ave, across from campus on College Ave', website: 'https://www.arpm.com/property/barcroft/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17', name: 'Beaver Hill Apartments', address: '340 East Beaver Avenue', website: 'https://www.risestatecollege.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18', name: 'Beaver Plaza', address: '222 W Beaver Ave', website: 'https://www.arpm.com/property/beaver-plaza/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19', name: 'Beaver Terrace', address: '456 E. Beaver', website: 'https://www.arpm.com/property/beaver-terrace/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a20', name: 'Blue Course Commons', address: '446 Blue Course Dr, Near Giant shopping Center', website: 'https://www.offcampushousingstatecollege.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a21', name: 'Bryce Jordan Towers', address: '463 E. Beaver Ave', website: 'https://www.arpm.com/property/bryce-jordan-tower/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', name: 'Bryn, the', address: '601 Vairo Boulevard', website: 'https://livethebryn.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a23', name: 'Burrowes Corner', address: '119 S Burrowes St', website: 'https://www.gnrealty.com/burrowes-corner', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a24', name: 'Calder Commons', address: '520 E Calder Way # A', website: 'https://www.caldercommons.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a25', name: 'Campus Tower', address: '419 Beaver Ave', website: 'https://campustowersc.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a26', name: 'Campus View', address: '106 E. College Ave', website: 'https://www.arpm.com/property/campus-view/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a27', name: 'Carlton Apartments', address: '325 South Garner St', website: 'https://www.apartmentstore.com/building/state-college/carlton-apartments', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a28', name: 'Cedarbrook', address: '320 E Beaver Ave', website: 'https://www.livethecanyon.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a29', name: 'Centre Court', address: '141 S. Garner St.', website: 'http://www.centrecourtsc.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a30', name: 'Cliffside Apartments', address: '723 S. Atherton', website: 'https://www.arpm.com/property/cliffside-apartments/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a31', name: 'College Avenue Apartments', address: '536 West College Ave.', website: 'https://www.apartmentstore.com/building/state-college/college-avenue-apartments', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a32', name: 'College Park', address: '415 W. College Ave, College Ave and Atherton St, less than 1 block from IST bldg', website: 'https://www.lenwoodinc.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', name: 'Collegian', address: '217 S Atherton St', website: 'https://www.arpm.com/property/collegian/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a34', name: 'Collegiate Arms', address: '218 Sparks St.', website: 'https://www.apartmentstore.com/building/state-college/collegiate-arms', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a35', name: 'Crestmont Apartments', address: '901 S. Allen St', website: 'https://www.arpm.com/property/crestmont-apartments/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a36', name: 'Diplomat, The', address: '329 E Beaver', website: 'https://www.livethecanyon.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a37', name: 'East Side', address: '736 East Foster Avenue', website: 'https://www.gnrealty.com/east-side-apartments', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a38', name: 'Fairmount Hills Apartments', address: '215 W. Fairmount Ave., W. Fairmount Ave and Fraser Street - by memorial field.', website: 'https://www.arpm.com/property/fairmount-hills', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a39', name: 'Fromm Building', address: '112-118 E. College Ave', website: 'https://www.rentpfe.com/listings/rent-student-apartments-fromm-building/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a40', name: 'Garner Court', address: '228 S Garner St', website: 'https://www.livethecanyon.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a41', name: 'GN Centre', address: '142 S. Allen', website: 'https://www.gnrealty.com/gn-centre', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a42', name: 'Graduate, The', address: '138 South Atherton Street', website: 'https://www.gnrealty.com/the-graduate', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a43', name: 'Hamilton Apartments', address: '204 & 220 E. Hamilton Ave', website: 'https://hamiltonaveapartments.rentpmi.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', name: 'Heights, The', address: '201 Northwick Blvd, next to PSU golf course', website: 'https://www.heightsatstatecollege.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a45', name: 'Hetzel Plaza', address: '500 E. College Ave', website: 'https://www.arpm.com/property/hetzel-plaza/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a46', name: 'Highland Tower', address: '226 Highland Ave', website: 'https://www.apartmentsstatecollege.com/highland-towers-apartments', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a47', name: 'Holly House', address: '825 S. Allen St', website: 'https://www.arpm.com/property/holly-house/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a48', name: 'Ivy Place', address: '236 S Fraser St', website: 'https://www.arpm.com/property/ivy-place/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a49', name: 'Keystone Apartments', address: '728 W College Ave', website: 'https://720collegeavenue.rentpmi.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a50', name: 'Laurel Terrace', address: '317 E Beaver', website: 'https://laurelterrace.rentpmi.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a51', name: 'Legacy, The', address: '478 E Calder Way', website: 'https://www.thelegacystatecollege.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a52', name: 'Legend, The', address: '246 Highland Ave', website: 'https://www.arpm.com/property/legend/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a53', name: 'Lennwood Place', address: '917 S. Allen Street', website: 'https://www.lenwoodinc.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a54', name: 'Lexington House Apartments', address: '518 University Drive - by Burger King', website: 'https://www.apartmentstore.com/building/state-college/lexington-house', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a55', name: 'Lion, The', address: '245 South Atherton Street', website: 'https://www.gnrealty.com/the-lion/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a56', name: 'Maxxen, The', address: '131 Heister', website: 'https://www.themaxxen.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a57', name: 'Meridian', address: '646 E. College Ave (at University Dr)', website: 'https://meridianoncollegeavenue.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a58', name: 'Metropolitan, The', address: 'center of town', website: 'https://www.themetstatecollege.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a59', name: 'Mount Nittany', address: '1006 S Pugh St (S. Pugh Street and Westerly Parkway)', website: 'https://www.lenwoodinc.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a60', name: 'Nicholas Tower', address: '301 S. Pugh St', website: 'https://www.apartmentstore.com/building/state-college/nicholas-tower', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a61', name: 'Nittany Garden Apartments', address: '445 Waupelani Dr - closer to high school', website: 'https://www.apartmentstore.com/building/state-college/nittany-gardens', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a62', name: 'Nittany View Apartments', address: '804 South Allen Street', website: 'https://www.arpm.com/property/nittany-view/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a63', name: 'O\'Brien Place', address: '300 S. Pugh St', website: 'https://www.arpm.com/property/obrien-place/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a64', name: 'Palmerton', address: '316 W. Beaver Avenue, West Beaver and Atherton', website: 'https://statecollege.apartmentstore.com/state-college/palmerton/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a65', name: 'Park Crest Terrace', address: '1400 Martin St., by Tudek park.', website: 'https://calibreresidential.com/properties/student-housing-state-college-park-crest-terrace/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a66', name: 'Park Hill', address: '478 E Beaver Ave', website: 'https://www.liveparkhill.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a67', name: 'Park Place', address: '224 S. Burrowes St', website: 'https://www.gnrealty.com/park-place', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a68', name: 'Parkway Plaza', address: '1000 Plaza Drive', website: 'https://www.liveparkwayplaza.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a69', name: 'Penn Tower', address: '255 East Beaver Avenue', website: 'https://www.arpm.com/property/penn-tower/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a70', name: 'Penn State Apartments', address: '525 West Foster Ave', website: 'https://www.apartmentstore.com/locations/state-college/penn-state-apartments', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a71', name: 'Peppermill Condos', address: '710 S Atherton St', website: 'http://www.peppermillcoa.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a72', name: 'Phoenix, The', address: '501 E. Beaver Ave', website: 'https://www.arpm.com/property/phoenix/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a73', name: 'Pointe, The', address: '501 Vairo Blvd, Behind Walmart shopping plaza', website: 'https://www.pointestatecollege.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a74', name: 'Pugh Centre', address: '150 E. Beaver Avenue', website: 'https://www.arpm.com/property/pugh-centre/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a75', name: 'Pugh St Assoc Apartments', address: 'Above Sheetz on Pugh', website: 'https://www.hawbakerengineering.com/experience/pugh-street-associates-apartments/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a76', name: 'Retreat, The', address: '300 Waupelani Dr', website: 'https://www.retreatstatecollege.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a77', name: 'Rise, the', address: '532 E College Ave', website: '', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a78', name: 'Standard, The', address: '330 W College Ave', website: 'https://www.thestandardstatecollege.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a79', name: 'State College Collective', address: '4 communities', website: 'https://www.statecollegecollective.com/', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a80', name: 'Sutton Court Apartments', address: '674 E Prospect Ave', website: 'https://www.apartmentstore.com/building/state-college/sutton-court', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a81', name: 'The Americana', address: '119 Locust Lane', website: 'https://americanahouse.rentpmi.com', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a82', name: 'Town Square', address: '119 S Burrowes St', website: 'https://www.gnrealty.com/town-square', defaultImage: '/apt_defaults/default.png' },
+  { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a83', name: 'Towneview Apartments', address: 'South Pugh & Bradley', website: 'https://www.lenwoodinc.com', defaultImage: '/apt_defaults/default.png' },
 ];
 
 // Amenities options
@@ -37,28 +107,81 @@ const amenityOptions = [
   'Bus Route',
 ];
 
-export default function CreateListingForm() {
+// Define the component props to include initialData and isEditMode
+interface CreateListingFormProps {
+  initialData?: any;
+  isEditMode?: boolean;
+}
+
+export default function CreateListingForm({ initialData, isEditMode = false }: CreateListingFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [apartments, setApartments] = useState(defaultApartments);
+  const { getApartments } = useApartments();
+  const { updateListing } = useListings();
 
-  // Form state
+  // Debug the initialData
+  useEffect(() => {
+    if (initialData && isEditMode) {
+      console.log('Edit mode with initialData:', initialData);
+    }
+  }, [initialData, isEditMode]);
+
+  // Fetch apartments from database
+  useEffect(() => {
+    const fetchApartments = async () => {
+      try {
+        const { data, error } = await getApartments();
+        if (error) {
+          console.error('Error fetching apartments:', error);
+          // Fallback to default apartments on error
+          setApartments(defaultApartments);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          // Transform data to include defaultImage and ensure type compatibility
+          const transformedData = data.map(apt => ({
+            id: apt.id || `fallback-${apt.name}`,  // Ensure id exists
+            name: apt.name || 'Unknown',  // Ensure name exists
+            address: apt.address || '',  // Ensure address exists
+            website: apt.website || '',  // Ensure website exists
+            defaultImage: '/apt_defaults/default.png'
+          }));
+          setApartments(transformedData);
+        } else {
+          // Fallback to default apartments if no data returned
+          setApartments(defaultApartments);
+        }
+      } catch (err) {
+        console.error('Error in fetchApartments:', err);
+        // Fallback to default apartments on any error
+        setApartments(defaultApartments);
+      }
+    };
+
+    fetchApartments();
+  }, [getApartments]);
+
+  // Form state - initialize with initialData if provided
   const [listingData, setListingData] = useState({
-    apartmentId: '',
-    customApartment: '',
-    floorPlan: '',
-    bedrooms: '1',
-    bathrooms: '1',
-    currentRent: '',
-    offerPrice: '',
-    negotiable: false,
-    startDate: '',
-    endDate: '',
-    description: '',
-    amenities: [] as string[],
-    hasRoommates: false,
-    roommatesStaying: false,
-    genderPreference: '',
+    apartmentId: initialData ? (initialData.apartment_id || 'custom') : '',
+    customApartment: initialData ? (initialData.custom_apartment || '') : '',
+    floorPlan: initialData ? (initialData.floor_plan || '') : '',
+    bedrooms: initialData ? initialData.bedrooms.toString() : '1',
+    bathrooms: initialData ? initialData.bathrooms.toString() : '1',
+    privateRoom: initialData ? !!initialData.private_bathroom : false,
+    currentRent: initialData ? initialData.current_rent.toString() : '',
+    offerPrice: initialData ? initialData.offer_price.toString() : '',
+    negotiable: initialData ? initialData.negotiable : false,
+    startDate: initialData ? initialData.start_date : '',
+    endDate: initialData ? initialData.end_date : '',
+    description: initialData ? (initialData.description || '') : '',
+    amenities: initialData ? (initialData.amenities || []) : [] as string[],
+    hasRoommates: initialData ? initialData.has_roommates : false,
+    roommatesStaying: initialData ? initialData.roommates_staying : false,
+    genderPreference: initialData ? (initialData.gender_preference || '') : '',
     images: [] as File[],
   });
 
@@ -66,6 +189,11 @@ export default function CreateListingForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [confirmed, setConfirmed] = useState<boolean>(false);
+
+  // Add a state to track existing images in edit mode
+  const [existingImages, setExistingImages] = useState<string[]>(
+    initialData && initialData.images ? initialData.images : []
+  );
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -89,7 +217,7 @@ export default function CreateListingForm() {
     setListingData({
       ...listingData,
       amenities: listingData.amenities.includes(amenity)
-        ? listingData.amenities.filter(a => a !== amenity)
+        ? listingData.amenities.filter((a: string) => a !== amenity)
         : [...listingData.amenities, amenity],
     });
   };
@@ -125,7 +253,7 @@ export default function CreateListingForm() {
     window.scrollTo(0, 0);
   };
 
-  // Submit the form
+  // Submit the form - modified to handle both create and edit operations
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -134,113 +262,174 @@ export default function CreateListingForm() {
 
     try {
       // Get the authenticated user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) {
-        throw new Error('Authentication error: ' + userError.message);
+      let user;
+      try {
+        const { data, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          throw new Error('Authentication error: ' + userError.message);
+        }
+        
+        user = data.user;
+        if (!user) {
+          throw new Error('You must be signed in to create a listing');
+        }
+      } catch (authError) {
+        console.error('Authentication error:', authError);
+        setError('Authentication failed. Please sign in again and retry.');
+        setIsLoading(false);
+        return;
       }
       
-      if (!user) {
-        throw new Error('You must be signed in to create a listing');
+      // Validate required fields
+      if (!listingData.apartmentId) {
+        throw new Error('Please select an apartment');
       }
       
-      // Format the data for submission
-      const formattedData = {
+      if (listingData.apartmentId === 'custom' && !listingData.customApartment) {
+        throw new Error('Please enter an apartment name');
+      }
+      
+      if (!listingData.startDate || !listingData.endDate) {
+        throw new Error('Please enter lease start and end dates');
+      }
+      
+      // Validate numeric fields
+      const currentRent = parseFloat(listingData.currentRent);
+      if (isNaN(currentRent) || currentRent <= 0) {
+        throw new Error('Please enter a valid current rent amount');
+      }
+      
+      const offerPrice = parseFloat(listingData.offerPrice);
+      if (isNaN(offerPrice) || offerPrice <= 0) {
+        throw new Error('Please enter a valid offer price');
+      }
+      
+      // Prepare the listing data for upload
+      const listingToUpload: any = {
         user_id: user.id,
         apartment_id: listingData.apartmentId === 'custom' ? null : listingData.apartmentId,
         custom_apartment: listingData.apartmentId === 'custom' ? listingData.customApartment : null,
-        floor_plan: listingData.floorPlan,
+        floor_plan: listingData.floorPlan || '',
         bedrooms: parseInt(listingData.bedrooms),
         bathrooms: parseFloat(listingData.bathrooms),
-        current_rent: parseFloat(listingData.currentRent),
-        offer_price: parseFloat(listingData.offerPrice),
+        private_bathroom: listingData.privateRoom,
+        current_rent: currentRent,
+        offer_price: offerPrice,
         negotiable: listingData.negotiable,
         start_date: listingData.startDate,
         end_date: listingData.endDate,
         description: listingData.description,
-        amenities: listingData.amenities,
+        amenities: listingData.amenities.length > 0 ? listingData.amenities : null,
         has_roommates: listingData.hasRoommates,
-        roommates_staying: listingData.roommatesStaying,
-        gender_preference: listingData.genderPreference,
+        roommates_staying: listingData.hasRoommates ? listingData.roommatesStaying : null,
+        gender_preference: listingData.hasRoommates && listingData.genderPreference ? listingData.genderPreference : null,
+        updated_at: new Date().toISOString(),
       };
-      
-      // Insert into database
-      const { error: insertError, data: insertedData } = await supabase
-        .from('listings')
-        .insert(formattedData)
-        .select()
-        .single();
-      
-      if (insertError) {
-        console.error('Database insertion error:', insertError);
-        throw new Error(`Failed to create listing: ${insertError.message}`);
+
+      // If not in edit mode, add created_at field
+      if (!isEditMode) {
+        listingToUpload.created_at = new Date().toISOString();
       }
       
-      if (!insertedData) {
-        throw new Error('Failed to create listing: No data returned');
-      }
+      // Initialize images with existing images in edit mode
+      const finalImages = [...existingImages];
       
-      const listingId = insertedData.id;
-      
-      // Upload images if there are any
-      const imageUrls = [];
-      
+      // Upload new images if present
       if (listingData.images.length > 0) {
-        for (const image of listingData.images) {
-          const filename = `${user.id}/${Date.now()}-${image.name}`;
-          const { error: uploadError } = await supabase.storage
-            .from('listing-images')
-            .upload(filename, image, {
-              upsert: true,
-              metadata: {
-                contentType: image.type,
-              },
-            });
+        try {
+          const imageUrls = [];
           
-          if (uploadError) {
-            console.error('Error uploading image:', uploadError);
-            continue;
-          }
-          
-          // Get public URL
-          const { data } = supabase.storage
-            .from('listing-images')
-            .getPublicUrl(filename);
+          for (const image of listingData.images) {
+            // Generate a unique file name
+            const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${image.name.split('.').pop()}`;
             
-          if (data) {
-            imageUrls.push(data.publicUrl);
+            // Upload the image to storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('listing-images')
+              .upload(fileName, image);
+            
+            if (uploadError) {
+              console.error('Error uploading image:', uploadError);
+              continue; // Skip this image if upload fails
+            }
+            
+            // Get the public URL
+            const { data: urlData } = await supabase.storage
+              .from('listing-images')
+              .getPublicUrl(fileName);
+            
+            if (urlData && urlData.publicUrl) {
+              imageUrls.push(urlData.publicUrl);
+            }
           }
+          
+          // Combine new images with existing ones
+          finalImages.push(...imageUrls);
+        } catch (imageError) {
+          console.error('Error processing images:', imageError);
+        }
+      }
+      
+      // Add images to the listing data
+      listingToUpload.images = finalImages.length > 0 ? finalImages : [];
+      
+      // Insert or update the listing in the database
+      try {
+        let result;
+        
+        if (isEditMode && initialData) {
+          // Update existing listing
+          const { data: updateData, error: updateError } = await updateListing(
+            initialData.id,
+            listingToUpload
+          );
+          
+          if (updateError) {
+            throw new Error(`Error updating listing: ${updateError}`);
+          }
+          
+          result = updateData;
+        } else {
+          // Insert new listing
+          const { data: insertData, error: insertError } = await supabase
+            .from('listings')
+            .insert(listingToUpload)
+            .select()
+            .single();
+          
+          if (insertError) {
+            throw new Error(`Error creating listing: ${insertError.message}`);
+          }
+          
+          result = insertData;
         }
         
-        // Update listing with image URLs if any were uploaded
-        if (imageUrls.length > 0) {
-          const { error: updateError } = await supabase
-            .from('listings')
-            .update({ 
-              images: imageUrls
-            })
-            .eq('id', listingId);
-            
-          if (updateError) {
-            console.error('Error updating listing with images:', updateError);
+        setSuccess(true);
+        
+        // Redirect after a short delay
+        setTimeout(() => {
+          if (isEditMode) {
+            router.push(`/listings/${initialData.id}`);
+          } else {
+            router.push('/profile');
           }
-        }
+        }, 2000);
+      } catch (dbError) {
+        console.error('Database operation error:', dbError);
+        throw new Error('Failed to save listing. Please try again.');
       }
-      
-      // Show success message
-      setSuccess(true);
-      
-      // Redirect after a delay to allow user to see success message
-      setTimeout(() => {
-        router.push('/profile');
-      }, 2000);
-      
-    } catch (error: any) {
-      console.error('Error submitting form:', error);
-      setError(error.message || 'An unexpected error occurred');
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred. Please try again.');
+      console.error('Form submission error:', err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Remove existing image in edit mode
+  const removeExistingImage = (index: number) => {
+    setExistingImages(existingImages.filter((_, i) => i !== index));
   };
 
   // Render step content
@@ -253,19 +442,19 @@ export default function CreateListingForm() {
             
             <div className="space-y-6">
               <div>
-                <Select
+                <ApartmentSearchInput
                   label="Select Your Apartment"
-                  name="apartmentId"
                   value={listingData.apartmentId}
-                  onChange={handleInputChange}
-                  options={[
-                    { value: '', label: 'Select an apartment...' },
-                    ...apartments.map(apt => ({ 
-                      value: apt.id, 
-                      label: `${apt.name} - ${apt.address}` 
-                    })),
-                    { value: 'custom', label: 'My apartment is not listed' },
-                  ]}
+                  onChange={(id, apartment) => {
+                    setListingData({
+                      ...listingData,
+                      apartmentId: id,
+                      // Clear custom apartment field if not a custom listing
+                      customApartment: id === 'custom' ? listingData.customApartment : '',
+                    });
+                  }}
+                  apartments={apartments}
+                  customOption={true}
                 />
               </div>
               
@@ -327,6 +516,30 @@ export default function CreateListingForm() {
                     { value: '3.5', label: '3.5+ Bathrooms' },
                   ]}
                 />
+              </div>
+              
+              <div className="mt-4">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="private-bathroom"
+                    name="privateRoom"
+                    checked={listingData.privateRoom}
+                    onChange={(e) => {
+                      setListingData({
+                        ...listingData,
+                        privateRoom: e.target.checked,
+                      });
+                    }}
+                    className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  />
+                  <label htmlFor="private-bathroom" className="ml-2 block text-sm text-text-primary">
+                    Private Bathroom
+                  </label>
+                </div>
+                <span className="text-xs text-text-secondary mt-1 block">
+                  Check if the room being subleased has its own private bathroom
+                </span>
               </div>
             </div>
           </>
@@ -418,7 +631,7 @@ export default function CreateListingForm() {
                   Select all amenities that apply
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {amenityOptions.map((amenity) => (
+                  {amenityOptions.map((amenity: string) => (
                     <div key={amenity} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -496,6 +709,34 @@ export default function CreateListingForm() {
             <h2 className="text-2xl font-bold text-text-primary mb-6">Listing Images</h2>
             
             <div className="space-y-6">
+              {existingImages.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-text-primary mb-4">Existing Images</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {existingImages.map((imageUrl, index) => (
+                      <div key={`existing-${index}`} className="relative group">
+                        <div className="h-24 bg-bg-secondary rounded-lg overflow-hidden">
+                          <img
+                            src={imageUrl}
+                            alt={`Existing ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(index)}
+                          className="absolute top-1 right-1 bg-bg-secondary bg-opacity-75 rounded-full p-1 text-error opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div>
                 <p className="text-text-secondary mb-4">
                   Upload photos of your apartment to attract more interest. Include images of the bedroom, bathroom, living area, and any special features.
@@ -524,7 +765,7 @@ export default function CreateListingForm() {
               
               {listingData.images.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold text-text-primary mb-4">Uploaded Images</h3>
+                  <h3 className="text-lg font-semibold text-text-primary mb-4">New Uploaded Images</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {listingData.images.map((image, index) => (
                       <div key={index} className="relative group">
@@ -582,6 +823,10 @@ export default function CreateListingForm() {
                     <span className="text-text-secondary">Bathrooms:</span>
                     <span className="text-text-primary">{listingData.bathrooms}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">Private Bathroom:</span>
+                    <span className="text-text-primary">{listingData.privateRoom ? 'Yes' : 'No'}</span>
+                  </div>
                 </div>
               </Card>
               
@@ -621,7 +866,7 @@ export default function CreateListingForm() {
                 <Card variant="glass">
                   <h3 className="text-lg font-semibold text-text-primary mb-4">Amenities</h3>
                   <div className="grid grid-cols-2 gap-2">
-                    {listingData.amenities.map((amenity) => (
+                    {listingData.amenities.map((amenity: string) => (
                       <div key={amenity} className="flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-accent">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -653,10 +898,19 @@ export default function CreateListingForm() {
               
               <Card variant="glass">
                 <h3 className="text-lg font-semibold text-text-primary mb-4">Images</h3>
-                {listingData.images.length > 0 ? (
+                {(existingImages.length > 0 || listingData.images.length > 0) ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {existingImages.map((imageUrl, index) => (
+                      <div key={`existing-${index}`} className="h-24 bg-bg-secondary rounded-lg overflow-hidden">
+                        <img
+                          src={imageUrl}
+                          alt={`Existing ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
                     {listingData.images.map((image, index) => (
-                      <div key={index} className="h-24 bg-bg-secondary rounded-lg overflow-hidden">
+                      <div key={`new-${index}`} className="h-24 bg-bg-secondary rounded-lg overflow-hidden">
                         <img
                           src={URL.createObjectURL(image)}
                           alt={`Upload ${index + 1}`}
@@ -744,7 +998,7 @@ export default function CreateListingForm() {
             className="ml-auto"
             disabled={!confirmed}
           >
-            Submit Listing
+            {isEditMode ? 'Update Listing' : 'Submit Listing'}
           </Button>
         )}
       </div>

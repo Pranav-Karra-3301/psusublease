@@ -15,6 +15,10 @@ module.exports = {
         'border-light': '#E0E0E0',
         'error': '#D32F2F',
       },
+      fontFamily: {
+        'vt323': ['var(--font-vt323)', 'monospace'],
+        'pixelify': ['var(--font-pixelify-sans)', 'sans-serif'],
+      },
     },
   },
   plugins: [],

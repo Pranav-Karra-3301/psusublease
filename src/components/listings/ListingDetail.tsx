@@ -4,6 +4,9 @@ import Image from 'next/image';
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import Link from 'next/link';
+import { useAuthContext } from '@/components/auth/AuthProvider';
+import { formatDate, formatDateRange } from '@/utils/formatters';
 
 interface ListingDetailProps {
   id: string;
@@ -25,6 +28,7 @@ interface ListingDetailProps {
     phone?: string;
     preferredContact?: string;
   };
+  createdAt?: string;
 }
 
 export default function ListingDetail({
@@ -41,11 +45,13 @@ export default function ListingDetail({
   hasRoommates = false,
   roommatesStaying = false,
   genderPreference = '',
-  images = ['/placeholder.jpg'],
+  images = ['/apt_defaults/default.png'],
   contactInfo,
+  createdAt,
 }: ListingDetailProps) {
-  const [selectedImage, setSelectedImage] = useState(images[0]);
+  const [selectedImage, setSelectedImage] = useState(images && images.length > 0 ? images[0] : '/apt_defaults/default.png');
   const [showContact, setShowContact] = useState(false);
+  const { user } = useAuthContext();
   
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -89,7 +95,14 @@ export default function ListingDetail({
         
         {/* Main details */}
         <Card variant="glass">
-          <h1 className="text-2xl font-bold text-text-primary mb-2">{apartment}</h1>
+          <div className="flex justify-between items-start mb-4">
+            <h1 className="text-2xl font-bold text-text-primary">{apartment}</h1>
+            {createdAt && (
+              <div className="text-sm text-text-secondary">
+                Posted on {formatDate(createdAt)}
+              </div>
+            )}
+          </div>
           <p className="text-text-secondary mb-4">{location}</p>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -100,7 +113,7 @@ export default function ListingDetail({
             <div className="flex flex-col">
               <span className="text-text-secondary text-sm">Availability</span>
               <span className="text-text-primary">
-                {new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {formatDate(startDate)}
               </span>
             </div>
             <div className="flex flex-col">
@@ -177,8 +190,7 @@ export default function ListingDetail({
             <div className="flex justify-between">
               <span className="text-text-secondary">Lease Period</span>
               <span className="text-text-primary font-medium">
-                {new Date(startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - 
-                {new Date(endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                {formatDateRange(startDate, endDate)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -211,11 +223,11 @@ export default function ListingDetail({
             >
               Show Contact Information
             </Button>
-          ) : contactInfo ? (
+          ) : user ? (
             <div className="space-y-4">
               <h3 className="text-base font-medium text-text-primary">Contact Information</h3>
               
-              {contactInfo.email && (
+              {contactInfo?.email && (
                 <div className="flex items-center gap-3">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 text-accent">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -226,7 +238,7 @@ export default function ListingDetail({
                 </div>
               )}
               
-              {contactInfo.phone && (
+              {contactInfo?.phone && (
                 <div className="flex items-center gap-3">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 text-accent">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -237,7 +249,7 @@ export default function ListingDetail({
                 </div>
               )}
               
-              {contactInfo.preferredContact && (
+              {contactInfo?.preferredContact && (
                 <p className="text-text-secondary text-sm mt-2">
                   <span className="text-text-primary font-medium">Preferred Contact Method: </span>
                   {contactInfo.preferredContact}
@@ -245,11 +257,28 @@ export default function ListingDetail({
               )}
             </div>
           ) : (
-            <div className="text-center p-4 bg-bg-secondary rounded-lg">
-              <p className="text-text-secondary">Login required to view contact information</p>
-              <Button variant="secondary" className="mt-3" fullWidth>
-                Sign In
-              </Button>
+            <div className="relative">
+              <div className="filter blur-sm">
+                <h3 className="text-base font-medium text-text-primary">Contact Information</h3>
+                <div className="flex items-center gap-3 my-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 text-accent">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-text-primary">example@email.com</span>
+                </div>
+                <div className="flex items-center gap-3 my-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 text-accent">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <span className="text-text-primary">(555) 555-5555</span>
+                </div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center flex-col bg-bg-primary/60 rounded p-2">
+                <p className="text-center font-medium mb-2">Login to view contact info</p>
+                <Link href="/auth">
+                  <Button variant="primary" size="sm">Login</Button>
+                </Link>
+              </div>
             </div>
           )}
         </Card>

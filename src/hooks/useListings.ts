@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import supabase from '../utils/supabase';
 import { Database } from '../types/database.types';
 
@@ -9,7 +9,7 @@ export function useListings() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getListings = async () => {
+  const getListings = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -18,8 +18,7 @@ export function useListings() {
         .from('listings')
         .select(`
           *,
-          apartments(*),
-          profiles(first_name, last_name)
+          apartments(*)
         `)
         .order('created_at', { ascending: false });
       
@@ -27,14 +26,15 @@ export function useListings() {
       
       return { data, error: null };
     } catch (err: any) {
+      console.error('Error in getListings:', err);
       setError(err.message);
       return { data: null, error: err.message };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const getListing = async (id: string) => {
+  const getListing = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
     
@@ -43,8 +43,7 @@ export function useListings() {
         .from('listings')
         .select(`
           *,
-          apartments(*),
-          profiles(first_name, last_name, email, phone, preferred_contact)
+          apartments(*)
         `)
         .eq('id', id)
         .single();
@@ -53,14 +52,15 @@ export function useListings() {
       
       return { data, error: null };
     } catch (err: any) {
+      console.error('Error in getListing:', err);
       setError(err.message);
       return { data: null, error: err.message };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const createListing = async (listing: NewListing) => {
+  const createListing = useCallback(async (listing: NewListing) => {
     setLoading(true);
     setError(null);
     
@@ -68,21 +68,25 @@ export function useListings() {
       const { data, error } = await supabase
         .from('listings')
         .insert(listing)
-        .select()
+        .select(`
+          *,
+          apartments(*)
+        `)
         .single();
       
       if (error) throw error;
       
       return { data, error: null };
     } catch (err: any) {
+      console.error('Error in createListing:', err);
       setError(err.message);
       return { data: null, error: err.message };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateListing = async (id: string, updates: Partial<Listing>) => {
+  const updateListing = useCallback(async (id: string, updates: Partial<Listing>) => {
     setLoading(true);
     setError(null);
     
@@ -91,21 +95,25 @@ export function useListings() {
         .from('listings')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          apartments(*)
+        `)
         .single();
       
       if (error) throw error;
       
       return { data, error: null };
     } catch (err: any) {
+      console.error('Error in updateListing:', err);
       setError(err.message);
       return { data: null, error: err.message };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const deleteListing = async (id: string) => {
+  const deleteListing = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
     
@@ -119,12 +127,13 @@ export function useListings() {
       
       return { success: true, error: null };
     } catch (err: any) {
+      console.error('Error in deleteListing:', err);
       setError(err.message);
       return { success: false, error: err.message };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     loading,

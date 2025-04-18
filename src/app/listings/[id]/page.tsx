@@ -6,8 +6,11 @@ import { notFound } from 'next/navigation';
 import ListingDetail from '@/components/listings/ListingDetail';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
+import { useListings } from '@/hooks/useListings';
+import { useAuthContext } from '@/components/auth/AuthProvider';
+import supabase from '@/utils/supabase';
 
-// Mock data (will be replaced with Supabase fetch)
+// Mock data for fallback
 const mockListings = [
   {
     id: 'BLUE-723',
@@ -77,6 +80,8 @@ const mockListings = [
 export default function ListingPage() {
   const params = useParams();
   const { id } = params;
+  const { user } = useAuthContext();
+  const [isOwner, setIsOwner] = useState(false);
   const [listing, setListing] = useState<{
     id: string;
     apartment: string;
@@ -89,24 +94,117 @@ export default function ListingPage() {
     description: string;
     amenities: string[];
     hasRoommates: boolean;
-    roommatesStaying: number;
+    roommatesStaying: number | boolean;
     genderPreference: string;
     images: string[];
     contactInfo: { email?: string; phone?: string; preferredContact?: string };
+    createdAt: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { getListing } = useListings();
   
-  // Simulate fetching data
+  // Fetch the real listing data from Supabase
   useEffect(() => {
-    setIsLoading(true);
+    let isMounted = true;
     
-    // Fetch the listing data (mocked for now)
-    setTimeout(() => {
-      const found = mockListings.find(listing => listing.id === id);
-      setListing(found || null);
-      setIsLoading(false);
-    }, 1000);
-  }, [id]);
+    async function fetchListing() {
+      if (!isMounted) return;
+      
+      setIsLoading(true);
+      
+      try {
+        const { data, error } = await getListing(id as string);
+        
+        if (!isMounted) return;
+        
+        if (error) {
+          console.error('Error fetching listing:', error);
+          // Try to use mock data as fallback
+          const mockListing = mockListings.find(l => l.id === id);
+          if (mockListing && isMounted) {
+            setListing(mockListing);
+          } else if (isMounted) {
+            setListing(null);
+          }
+          return;
+        }
+        
+        if (data) {
+          // Check if the current user is the owner of this listing
+          if (user && data.user_id === user.id && isMounted) {
+            setIsOwner(true);
+          }
+          
+          // Fetch owner profile for contact info
+          let contactInfo = {
+            email: 'contact@psusublease.com', // Default fallback
+            phone: '', 
+            preferredContact: 'Email'
+          };
+          
+          if (data.user_id) {
+            const { data: userData, error: userError } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, email, phone, preferred_contact')
+              .eq('id', data.user_id)
+              .single();
+            
+            if (!userError && userData) {
+              contactInfo = {
+                email: userData.email || contactInfo.email,
+                phone: userData.phone || contactInfo.phone,
+                preferredContact: userData.preferred_contact || contactInfo.preferredContact
+              };
+            }
+          }
+          
+          // Transform the data to match the ListingDetail component's expected format
+          const transformedListing = {
+            id: data.id,
+            apartment: data.apartment_id ? 
+              (data.apartments?.name || 'Unknown Apartment') : 
+              (data.custom_apartment || 'Custom Apartment'),
+            location: data.apartments?.address || 'State College, PA',
+            price: data.offer_price || 0,
+            startDate: data.start_date || '',
+            endDate: data.end_date || '',
+            bedrooms: data.bedrooms || 0,
+            bathrooms: data.bathrooms || 0,
+            description: data.description || '',
+            amenities: data.amenities || [],
+            hasRoommates: Boolean(data.has_roommates),
+            roommatesStaying: data.roommates_staying !== null ? data.roommates_staying : false,
+            genderPreference: data.gender_preference || 'No Preference',
+            images: data.images && data.images.length > 0 ? 
+              data.images : ['/apt_defaults/default.png'],
+            contactInfo: contactInfo,
+            createdAt: data.created_at || ''
+          };
+          
+          if (isMounted) {
+            setListing(transformedListing);
+          }
+        } else if (isMounted) {
+          setListing(null);
+        }
+      } catch (err) {
+        console.error('Error in fetchListing:', err);
+        if (isMounted) {
+          setListing(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+    
+    fetchListing();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [id, getListing, user]);
   
   // Show loading state
   if (isLoading) {
@@ -128,13 +226,21 @@ export default function ListingPage() {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between items-center">
         <Link href="/listings" className="flex items-center text-text-secondary hover:text-text-primary transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 mr-1">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back to All Listings
         </Link>
+        
+        {isOwner && (
+          <Link href={`/listings/${id}/edit`}>
+            <Button variant="secondary">
+              Edit Listing
+            </Button>
+          </Link>
+        )}
       </div>
       
       <ListingDetail
@@ -153,6 +259,7 @@ export default function ListingPage() {
         genderPreference={listing.genderPreference}
         images={listing.images}
         contactInfo={listing.contactInfo}
+        createdAt={listing.createdAt}
       />
       
       <div className="mt-12 text-center">

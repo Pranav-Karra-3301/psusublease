@@ -5,147 +5,63 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
-import ListingGrid from '@/components/listings/ListingGrid';
-import { useListings } from '@/hooks/useListings';
+import Link from 'next/link';
+import RequestGrid from '@/components/requests/RequestGrid';
+import { useSubleaseRequests } from '@/hooks/useSubleaseRequests';
+import { useAuthContext } from '@/components/auth/AuthProvider';
 
-// Mock data for fallback if Supabase data can't be loaded
-const mockListings = [
-  {
-    id: 'BLUE-723',
-    apartment: 'The Rise',
-    location: 'Downtown State College',
-    price: 750,
-    startDate: '2023-08-01',
-    endDate: '2024-07-31',
-    bedrooms: 2,
-    bathrooms: 2,
-    image: '/placeholder.jpg'
-  },
-  {
-    id: 'LION-491',
-    apartment: 'The Metropolitan',
-    location: 'Downtown State College',
-    price: 850,
-    startDate: '2023-08-01',
-    endDate: '2024-07-31',
-    bedrooms: 1,
-    bathrooms: 1,
-    image: '/placeholder.jpg'
-  },
-  {
-    id: 'NITT-382',
-    apartment: 'The Legacy',
-    location: 'South State College',
-    price: 700,
-    startDate: '2023-08-01',
-    endDate: '2024-07-31',
-    bedrooms: 3,
-    bathrooms: 2,
-    image: '/placeholder.jpg'
-  },
-  {
-    id: 'PENN-654',
-    apartment: 'Calder Commons',
-    location: 'North State College',
-    price: 600,
-    startDate: '2023-08-01',
-    endDate: '2024-07-31',
-    bedrooms: 1,
-    bathrooms: 1,
-    image: '/placeholder.jpg'
-  },
-  {
-    id: 'VALE-289',
-    apartment: 'The Station',
-    location: 'East State College',
-    price: 900,
-    startDate: '2023-08-01',
-    endDate: '2024-07-31',
-    bedrooms: 2,
-    bathrooms: 2,
-    image: '/placeholder.jpg'
-  },
-  {
-    id: 'STAT-107',
-    apartment: 'Here State College',
-    location: 'West State College',
-    price: 800,
-    startDate: '2023-08-01',
-    endDate: '2024-07-31',
-    bedrooms: 3,
-    bathrooms: 3,
-    image: '/placeholder.jpg'
-  }
-];
-
-export default function ListingsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [listings, setListings] = useState(mockListings);
-  const [filteredListings, setFilteredListings] = useState(mockListings);
+export default function RequestsPage() {
+  const { user } = useAuthContext();
+  const { getRequests } = useSubleaseRequests();
+  const [requests, setRequests] = useState<any[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { getListings } = useListings();
   
   // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [bedrooms, setBedrooms] = useState('');
   const [bathrooms, setBathrooms] = useState('');
   const [sortBy, setSortBy] = useState('latest');
   
-  // Fetch real listings from Supabase
+  // Fetch requests from Supabase
   useEffect(() => {
     let isMounted = true;
     
-    async function fetchListings() {
+    async function fetchRequests() {
       if (!isMounted) return;
       
       setIsLoading(true);
       try {
-        const { data, error } = await getListings();
+        const { data, error } = await getRequests();
         
         if (!isMounted) return;
         
         if (error) {
-          console.error('Error fetching listings:', error);
-          // Fall back to mock data if there's an error
-          setListings(mockListings);
-          setFilteredListings(mockListings);
+          console.error('Error fetching requests:', error);
+          if (isMounted) {
+            setRequests([]);
+            setFilteredRequests([]);
+          }
           return;
         }
         
         if (data && data.length > 0) {
-          // Transform the data to match the ListingCard component's expected format
-          const transformedListings = data.map(listing => ({
-            id: listing.id,
-            apartment: listing.apartment_id ? 
-              (listing.apartments?.name || 'Unknown Apartment') : 
-              (listing.custom_apartment || 'Custom Apartment'),
-            location: listing.apartments?.address || 'State College, PA',
-            price: listing.offer_price || 0,
-            startDate: listing.start_date || '',
-            endDate: listing.end_date || '',
-            bedrooms: listing.bedrooms || 0,
-            bathrooms: listing.bathrooms || 0,
-            image: listing.images && listing.images.length > 0 ? 
-              listing.images[0] : '/apt_defaults/default.png'
-          }));
-          
           if (isMounted) {
-            setListings(transformedListings);
-            setFilteredListings(transformedListings);
+            setRequests(data);
+            setFilteredRequests(data);
           }
         } else {
-          // If no data, fall back to mock data
           if (isMounted) {
-            setListings(mockListings);
-            setFilteredListings(mockListings);
+            setRequests([]);
+            setFilteredRequests([]);
           }
         }
       } catch (err) {
-        console.error('Error in fetchListings:', err);
-        // Fall back to mock data if there's an exception
+        console.error('Error in fetchRequests:', err);
         if (isMounted) {
-          setListings(mockListings);
-          setFilteredListings(mockListings);
+          setRequests([]);
+          setFilteredRequests([]);
         }
       } finally {
         if (isMounted) {
@@ -154,64 +70,66 @@ export default function ListingsPage() {
       }
     }
     
-    fetchListings();
+    fetchRequests();
     
     return () => {
       isMounted = false;
     };
-  }, [getListings]);
+  }, [getRequests]);
   
   // Apply filters and sorting
   useEffect(() => {
-    let result = [...listings];
+    let result = [...requests];
     
     // Apply search filter
     if (searchQuery) {
-      result = result.filter(listing => 
-        listing.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        listing.apartment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        listing.location.toLowerCase().includes(searchQuery.toLowerCase())
+      result = result.filter(request => 
+        request.area_preference.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (request.preferred_apartments && request.preferred_apartments.some((apt: string) => 
+          apt.toLowerCase().includes(searchQuery.toLowerCase())
+        ))
       );
     }
     
-    // Apply price filter
+    // Apply price filter for minimum budget
     if (priceRange.min) {
-      result = result.filter(listing => listing.price >= Number(priceRange.min));
+      result = result.filter(request => request.budget_min >= Number(priceRange.min));
     }
+    
+    // Apply price filter for maximum budget
     if (priceRange.max) {
-      result = result.filter(listing => listing.price <= Number(priceRange.max));
+      result = result.filter(request => request.budget_max <= Number(priceRange.max));
     }
     
     // Apply bedroom filter
     if (bedrooms) {
-      result = result.filter(listing => listing.bedrooms === Number(bedrooms));
+      result = result.filter(request => request.bedrooms === Number(bedrooms));
     }
     
     // Apply bathroom filter
     if (bathrooms) {
-      result = result.filter(listing => listing.bathrooms === Number(bathrooms));
+      result = result.filter(request => request.bathrooms === Number(bathrooms));
     }
     
     // Apply sorting
     switch (sortBy) {
-      case 'price_low':
-        result.sort((a: any, b: any) => a.price - b.price);
+      case 'budget_low':
+        result.sort((a: any, b: any) => a.budget_min - b.budget_min);
         break;
-      case 'price_high':
-        result.sort((a: any, b: any) => b.price - a.price);
+      case 'budget_high':
+        result.sort((a: any, b: any) => b.budget_max - a.budget_max);
         break;
       case 'start_date':
-        result.sort((a: any, b: any) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+        result.sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
         break;
       case 'latest':
       default:
-        // In real app, we'd sort by creation date
-        result = result;
+        result.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
     }
     
-    setFilteredListings(result);
-  }, [searchQuery, listings, priceRange, bedrooms, bathrooms, sortBy]);
+    setFilteredRequests(result);
+  }, [searchQuery, requests, priceRange, bedrooms, bathrooms, sortBy]);
   
   // Reset all filters
   const resetFilters = () => {
@@ -224,7 +142,12 @@ export default function ListingsPage() {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-text-primary mb-8">Browse Listings</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h1 className="text-3xl font-bold text-text-primary">Browse Sublease Requests</h1>
+        <Link href="/requests/create">
+          <Button variant="primary">Post a Request</Button>
+        </Link>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Filters sidebar */}
@@ -236,7 +159,7 @@ export default function ListingsPage() {
               <div>
                 <Input
                   label="Search"
-                  placeholder="Listing ID, apartment, location..."
+                  placeholder="Area, apartment name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -244,7 +167,7 @@ export default function ListingsPage() {
               
               <div>
                 <label className="text-sm font-medium text-text-primary mb-2 block">
-                  Price Range
+                  Budget Range
                 </label>
                 <div className="flex items-center gap-2">
                   <Input
@@ -305,11 +228,11 @@ export default function ListingsPage() {
           </Card>
         </div>
         
-        {/* Listings content */}
+        {/* Requests content */}
         <div className="lg:col-span-3">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <p className="text-text-secondary">
-              Showing {filteredListings.length} {filteredListings.length === 1 ? 'listing' : 'listings'}
+              Showing {filteredRequests.length} {filteredRequests.length === 1 ? 'request' : 'requests'}
             </p>
             
             <Select
@@ -317,15 +240,19 @@ export default function ListingsPage() {
               onChange={(e) => setSortBy(e.target.value)}
               options={[
                 { value: 'latest', label: 'Latest' },
-                { value: 'price_low', label: 'Price: Low to High' },
-                { value: 'price_high', label: 'Price: High to Low' },
+                { value: 'budget_low', label: 'Budget: Low to High' },
+                { value: 'budget_high', label: 'Budget: High to Low' },
                 { value: 'start_date', label: 'Start Date' },
               ]}
               className="w-full md:w-48"
             />
           </div>
           
-          <ListingGrid listings={filteredListings} isLoading={isLoading} />
+          <RequestGrid
+            requests={filteredRequests}
+            isLoading={isLoading}
+            currentUserId={user?.id}
+          />
         </div>
       </div>
     </div>

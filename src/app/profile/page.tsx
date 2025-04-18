@@ -9,10 +9,13 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import supabase from '@/utils/supabase';
+import { useSubleaseRequests } from '@/hooks/useSubleaseRequests';
+import RequestGrid from '@/components/requests/RequestGrid';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user } = useAuthContext();
+  const { getUserRequests } = useSubleaseRequests();
   const [activeTab, setActiveTab] = useState('listings');
   const [editMode, setEditMode] = useState(false);
   const [userData, setUserData] = useState({
@@ -23,7 +26,9 @@ export default function ProfilePage() {
     preferredContact: 'email',
   });
   const [listings, setListings] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requestsLoading, setRequestsLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -126,6 +131,30 @@ export default function ProfilePage() {
       }
     }
     
+    async function fetchUserRequests() {
+      setRequestsLoading(true);
+      
+      try {
+        if (!user) {
+          console.error('No user found');
+          return;
+        }
+        
+        // Get user requests
+        const { data, error } = await getUserRequests(user.id);
+        
+        if (error) {
+          console.error('Error fetching requests:', error);
+        } else {
+          setRequests(data || []);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setRequestsLoading(false);
+      }
+    }
+    
     async function fetchApartments() {
       const { data: apartmentsData, error: apartmentsError } = await supabase
         .from('apartments')
@@ -140,8 +169,9 @@ export default function ProfilePage() {
     
     fetchUserData();
     fetchUserListings();
+    fetchUserRequests();
     fetchApartments();
-  }, [user, router]);
+  }, [user, router, getUserRequests]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -482,7 +512,7 @@ export default function ProfilePage() {
                     <Link href={`/listings/${listing.id}`} className="flex-1">
                       <Button variant="secondary" fullWidth size="sm">View</Button>
                     </Link>
-                    <Link href={`/listings/edit/${listing.id}`} className="flex-1">
+                    <Link href={`/listings/${listing.id}/edit`} className="flex-1">
                       <Button variant="primary" fullWidth size="sm">Edit</Button>
                     </Link>
                   </div>
@@ -504,6 +534,47 @@ export default function ProfilePage() {
             </Card>
           )}
         </div>
+      </div>
+    );
+  };
+  
+  // Render my requests tab
+  const renderMyRequests = () => {
+    if (requestsLoading) {
+      return (
+        <div className="space-y-4">
+          <div className="animate-pulse h-8 bg-bg-secondary rounded w-48 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="animate-pulse bg-bg-secondary h-64 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-2xl font-bold text-text-primary">My Requests</h2>
+          <Link href="/requests/create">
+            <Button variant="primary">Create New Request</Button>
+          </Link>
+        </div>
+        
+        {requests.length === 0 ? (
+          <Card variant="glass" className="p-8 text-center">
+            <p className="text-text-secondary mb-4">You haven't created any sublease requests yet.</p>
+            <Link href="/requests/create">
+              <Button variant="primary">Create Your First Request</Button>
+            </Link>
+          </Card>
+        ) : (
+          <RequestGrid 
+            requests={requests} 
+            currentUserId={user?.id}
+          />
+        )}
       </div>
     );
   };
@@ -584,52 +655,73 @@ export default function ProfilePage() {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-text-primary mb-2">Your Profile</h1>
-        <p className="text-text-secondary mb-8">Manage your account, listings, and preferences</p>
-        
-        {message && (
-          <div className={`mb-6 p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-            {message.text}
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left sidebar with user info */}
+          <Card variant="glass" className="lg:col-span-1 p-8">
+            <h2 className="text-2xl font-bold text-text-primary mb-8">My Profile</h2>
+            
+            {message && (
+              <div className={`mb-6 p-4 border rounded-lg ${
+                message.type === 'success' 
+                  ? 'bg-green-100 border-green-500 text-green-700' 
+                  : 'bg-error/10 border-error text-error'
+              }`}>
+                {message.text}
+              </div>
+            )}
+            
+            {renderProfileInfo()}
+          </Card>
+          
+          {/* Right content with tabs */}
+          <div className="lg:col-span-2">
+            <div className="flex border-b border-border-light mb-6">
+              <button
+                className={`px-4 py-3 text-lg font-semibold relative ${
+                  activeTab === 'listings'
+                    ? 'text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+                onClick={() => setActiveTab('listings')}
+              >
+                My Listings
+                {activeTab === 'listings' && (
+                  <span className="absolute bottom-0 left-0 w-full h-1 bg-accent"></span>
+                )}
+              </button>
+              <button
+                className={`px-4 py-3 text-lg font-semibold relative ${
+                  activeTab === 'requests'
+                    ? 'text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+                onClick={() => setActiveTab('requests')}
+              >
+                My Requests
+                {activeTab === 'requests' && (
+                  <span className="absolute bottom-0 left-0 w-full h-1 bg-accent"></span>
+                )}
+              </button>
+              <button
+                className={`px-4 py-3 text-lg font-semibold relative ${
+                  activeTab === 'account'
+                    ? 'text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+                onClick={() => setActiveTab('account')}
+              >
+                Account Settings
+                {activeTab === 'account' && (
+                  <span className="absolute bottom-0 left-0 w-full h-1 bg-accent"></span>
+                )}
+              </button>
+            </div>
+            
+            {activeTab === 'listings' && renderMyListings()}
+            {activeTab === 'requests' && renderMyRequests()}
+            {activeTab === 'account' && renderAccountSettings()}
           </div>
-        )}
-        
-        <div className="flex border-b border-border-light mb-6">
-          <button
-            className={`px-4 py-2 font-medium ${activeTab === 'listings' ? 'text-primary border-b-2 border-primary' : 'text-text-secondary hover:text-text-primary'}`}
-            onClick={() => setActiveTab('listings')}
-          >
-            My Listings
-          </button>
-          <button
-            className={`px-4 py-2 font-medium ${activeTab === 'profile' ? 'text-primary border-b-2 border-primary' : 'text-text-secondary hover:text-text-primary'}`}
-            onClick={() => setActiveTab('profile')}
-          >
-            Profile Info
-          </button>
-          <button
-            className={`px-4 py-2 font-medium ${activeTab === 'settings' ? 'text-primary border-b-2 border-primary' : 'text-text-secondary hover:text-text-primary'}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            Account Settings
-          </button>
-        </div>
-        
-        <div className="mb-8">
-          {activeTab === 'listings' && renderMyListings()}
-          {activeTab === 'profile' && (
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold text-text-primary mb-6">Profile Information</h2>
-              {profileLoading ? (
-                <div className="text-center py-4">
-                  <p>Loading profile data...</p>
-                </div>
-              ) : (
-                renderProfileInfo()
-              )}
-            </Card>
-          )}
-          {activeTab === 'settings' && renderAccountSettings()}
         </div>
       </div>
     </div>

@@ -152,6 +152,68 @@ export interface Database {
         }
         Relationships: []
       }
+      sublease_requests: {
+        Row: {
+          id: string
+          user_id: string
+          area_preference: string
+          distance_to_campus: number | null
+          start_date: string
+          end_date: string
+          budget_min: number
+          budget_max: number
+          preferred_apartments: string[] | null
+          bedrooms: number | null
+          bathrooms: number | null
+          additional_notes: string | null
+          is_verified: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          area_preference: string
+          distance_to_campus?: number | null
+          start_date: string
+          end_date: string
+          budget_min: number
+          budget_max: number
+          preferred_apartments?: string[] | null
+          bedrooms?: number | null
+          bathrooms?: number | null
+          additional_notes?: string | null
+          is_verified?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          area_preference?: string
+          distance_to_campus?: number | null
+          start_date?: string
+          end_date?: string
+          budget_min?: number
+          budget_max?: number
+          preferred_apartments?: string[] | null
+          bedrooms?: number | null
+          bathrooms?: number | null
+          additional_notes?: string | null
+          is_verified?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sublease_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
