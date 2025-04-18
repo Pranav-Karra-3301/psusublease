@@ -116,7 +116,7 @@ interface CreateListingFormProps {
 export default function CreateListingForm({ initialData, isEditMode = false }: CreateListingFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [apartments, setApartments] = useState(defaultApartments);
   const { getApartments } = useApartments();
   const { updateListing } = useListings();
@@ -185,6 +185,13 @@ export default function CreateListingForm({ initialData, isEditMode = false }: C
     images: [] as File[],
   });
 
+  // Add autofill-specific states
+  const [autofillText, setAutofillText] = useState('');
+  const [autofillImage, setAutofillImage] = useState<File | null>(null);
+  const [autofillPreview, setAutofillPreview] = useState<string | null>(null);
+  const [isAutofilling, setIsAutofilling] = useState(false);
+  const [autofillError, setAutofillError] = useState<string | null>(null);
+
   // Add a state for error messages
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
@@ -239,6 +246,103 @@ export default function CreateListingForm({ initialData, isEditMode = false }: C
       ...listingData,
       images: listingData.images.filter((_, i) => i !== index),
     });
+  };
+
+  // Handle autofill text input
+  const handleAutofillTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setAutofillText(e.target.value);
+  };
+
+  // Handle autofill image upload
+  const handleAutofillImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setAutofillImage(file);
+      setAutofillPreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Remove autofill image
+  const removeAutofillImage = () => {
+    if (autofillPreview) {
+      URL.revokeObjectURL(autofillPreview);
+    }
+    setAutofillImage(null);
+    setAutofillPreview(null);
+  };
+
+  // Submit autofill data to API and update form
+  const handleAutofill = async () => {
+    // Validate input
+    if (!autofillText && !autofillImage) {
+      setAutofillError('Please provide either a message or upload a screenshot');
+      return;
+    }
+
+    setIsAutofilling(true);
+    setAutofillError(null);
+
+    try {
+      // Create form data
+      const formData = new FormData();
+      if (autofillText) {
+        formData.append('text', autofillText);
+      }
+      if (autofillImage) {
+        formData.append('image', autofillImage);
+      }
+
+      // Call the API
+      const response = await fetch('/api/autofill-listing', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process autofill request');
+      }
+
+      const data = await response.json();
+
+      // Update form data with AI-generated values
+      setListingData(prevData => {
+        // Only update fields that have values in the response
+        const newData = { ...prevData };
+        
+        // Update fields if they exist in the response
+        if (data.apartmentId) newData.apartmentId = data.apartmentId;
+        if (data.customApartment) newData.customApartment = data.customApartment;
+        if (data.floorPlan) newData.floorPlan = data.floorPlan;
+        if (data.bedrooms) newData.bedrooms = data.bedrooms.toString();
+        if (data.bathrooms) newData.bathrooms = data.bathrooms.toString();
+        if (data.privateRoom !== undefined) newData.privateRoom = data.privateRoom;
+        if (data.currentRent) newData.currentRent = data.currentRent.toString();
+        if (data.offerPrice) newData.offerPrice = data.offerPrice.toString();
+        if (data.negotiable !== undefined) newData.negotiable = data.negotiable;
+        if (data.startDate) newData.startDate = data.startDate;
+        if (data.endDate) newData.endDate = data.endDate;
+        if (data.description) newData.description = data.description;
+        if (data.amenities && data.amenities.length > 0) newData.amenities = data.amenities;
+        if (data.hasRoommates !== undefined) newData.hasRoommates = data.hasRoommates;
+        if (data.roommatesStaying !== undefined) newData.roommatesStaying = data.roommatesStaying;
+        if (data.genderPreference) newData.genderPreference = data.genderPreference;
+        
+        return newData;
+      });
+
+      // Move to next step
+      nextStep();
+    } catch (error) {
+      console.error('Autofill error:', error);
+      setAutofillError('Failed to process your information. Please try again or fill in the form manually.');
+    } finally {
+      setIsAutofilling(false);
+    }
+  };
+
+  // Skip autofill
+  const skipAutofill = () => {
+    setStep(1);
   };
 
   // Move to next step
@@ -435,6 +539,102 @@ export default function CreateListingForm({ initialData, isEditMode = false }: C
   // Render step content
   const renderStepContent = () => {
     switch (step) {
+      case 0:
+        return (
+          <>
+            <h2 className="text-2xl font-bold text-text-primary mb-6">Quick Autofill</h2>
+            
+            <div className="space-y-6">
+              <p className="text-text-secondary">
+                Save time by letting AI autofill your listing! Paste the message you shared on social media or upload a screenshot from Instagram, Snapchat, or group chats.
+              </p>
+              
+              <div className="space-y-4">
+                <label className="text-sm font-medium text-text-primary block mb-2">
+                  Message you shared (optional)
+                </label>
+                <textarea
+                  rows={4}
+                  value={autofillText}
+                  onChange={handleAutofillTextChange}
+                  placeholder="Paste the text from your social media post or group chat message here..."
+                  className="w-full bg-bg-secondary border border-border-light rounded-lg px-4 py-2 text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-1 focus:ring-accent transition-all duration-200"
+                />
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium text-text-primary mb-4">
+                  Upload a screenshot (optional)
+                </p>
+                
+                {!autofillPreview ? (
+                  <Card variant="default" className="p-8 text-center">
+                    <input
+                      type="file"
+                      id="autofill-image"
+                      accept="image/*"
+                      onChange={handleAutofillImageUpload}
+                      className="hidden"
+                    />
+                    <label htmlFor="autofill-image" className="cursor-pointer">
+                      <div className="flex flex-col items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-12 h-12 text-accent mb-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="text-text-primary font-medium mb-1">Click to upload a screenshot</p>
+                        <p className="text-text-secondary text-sm">From Instagram, Snapchat, or group chats</p>
+                      </div>
+                    </label>
+                  </Card>
+                ) : (
+                  <div className="relative">
+                    <img
+                      src={autofillPreview}
+                      alt="Preview"
+                      className="w-full max-h-80 object-contain rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeAutofillImage}
+                      className="absolute top-2 right-2 bg-bg-secondary bg-opacity-75 rounded-full p-1 text-error"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {autofillError && (
+                <div className="p-3 bg-red-50 text-red-700 rounded-md">
+                  {autofillError}
+                </div>
+              )}
+              
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                <Button
+                  type="button"
+                  onClick={handleAutofill}
+                  isLoading={isAutofilling}
+                  disabled={isAutofilling || (!autofillText && !autofillImage)}
+                  className="flex-1"
+                >
+                  {isAutofilling ? 'Processing...' : 'Autofill with AI'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={skipAutofill}
+                  className="flex-1"
+                >
+                  Skip & Fill Manually
+                </Button>
+              </div>
+            </div>
+          </>
+        );
+        
       case 1:
         return (
           <>
@@ -968,7 +1168,7 @@ export default function CreateListingForm({ initialData, isEditMode = false }: C
       </Card>
       
       <div className="flex justify-between mt-8">
-        {step > 1 && (
+        {step > 0 ? (
           <Button
             type="button"
             variant="secondary"
@@ -977,13 +1177,15 @@ export default function CreateListingForm({ initialData, isEditMode = false }: C
           >
             Previous
           </Button>
-        )}
+        ) : null}
         
-        {step < 5 ? (
+        {step === 0 ? (
+          null // Buttons are already rendered in the autofill step
+        ) : step < 5 ? (
           <Button
             type="button"
             onClick={nextStep}
-            className="ml-auto"
+            className={step > 0 ? "ml-auto" : ""}
             disabled={
               (step === 1 && !listingData.apartmentId) ||
               (step === 2 && (!listingData.currentRent || !listingData.offerPrice || !listingData.startDate || !listingData.endDate))
@@ -1005,11 +1207,13 @@ export default function CreateListingForm({ initialData, isEditMode = false }: C
       
       <div className="flex justify-center mt-6">
         <div className="flex space-x-2">
-          {[1, 2, 3, 4, 5].map((stepNumber) => (
+          {[0, 1, 2, 3, 4, 5].map((stepNumber) => (
             <div
               key={stepNumber}
               className={`w-3 h-3 rounded-full ${
-                step === stepNumber
+                stepNumber === 0 
+                  ? (step === 0 ? 'bg-accent' : 'bg-accent/50') 
+                  : step === stepNumber
                   ? 'bg-accent'
                   : step > stepNumber
                   ? 'bg-accent/50'
