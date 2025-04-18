@@ -29,6 +29,58 @@ export default function AuthForm() {
     }
   }, [user, redirectPath, router]);
 
+  // Add this function to the AuthForm component
+  useEffect(() => {
+    // Check if user is logged in and there's pending profile data
+    const createPendingProfile = async () => {
+      if (user && localStorage.getItem('pendingProfile')) {
+        try {
+          const profileData = JSON.parse(localStorage.getItem('pendingProfile') || '{}');
+          
+          // Make sure the profile ID matches the current user
+          if (profileData.id === user.id) {
+            console.log('Creating profile for verified user:', user.id);
+            
+            // Get user token for authentication
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            
+            if (!token) {
+              console.error('No access token available');
+              return;
+            }
+            
+            // Call the API endpoint to create profile
+            const response = await fetch('/api/create-profile', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                profile: profileData,
+                userToken: token
+              })
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+              console.error('Profile creation error:', result.error);
+            } else {
+              console.log('Profile created successfully');
+              // Clear the pending profile data
+              localStorage.removeItem('pendingProfile');
+            }
+          }
+        } catch (error) {
+          console.error('Error creating pending profile:', error);
+        }
+      }
+    };
+    
+    createPendingProfile();
+  }, [user]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -63,26 +115,26 @@ export default function AuthForm() {
       } else {
         result = await signUp(email, password);
         
-        // If signup successful, add name and phone to profile
+        // If signup successful, store profile info in local storage temporarily
+        // We'll create the profile after email verification
         if (result.success && result.user) {
-          const nameArray = name.split(' ');
-          const firstName = nameArray[0] || '';
-          const lastName = nameArray.slice(1).join(' ') || '';
-          
-          const { error } = await supabase
-            .from('profiles')
-            .upsert({
+          try {
+            // Store profile data in local storage to use after verification
+            const profileData = {
               id: result.user.id,
-              first_name: firstName,
-              last_name: lastName,
+              first_name: name.split(' ')[0] || '',
+              last_name: name.split(' ').slice(1).join(' ') || '',
               phone: phone,
               email: email,
               preferred_contact: 'email'
-            });
+            };
             
-          if (error) {
-            console.error('Profile update error:', error);
-            throw new Error('Failed to update profile information: ' + error.message);
+            localStorage.setItem('pendingProfile', JSON.stringify(profileData));
+            
+            console.log('Profile data stored for later creation after verification');
+          } catch (profileError) {
+            console.error('Failed to store profile data:', profileError);
+            // Continue with signup - we'll handle profile creation later
           }
         }
       }
