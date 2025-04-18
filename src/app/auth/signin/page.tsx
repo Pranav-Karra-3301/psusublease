@@ -2,8 +2,10 @@
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function SignInPage() {
+// Client component that uses useSearchParams
+function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
@@ -15,9 +17,19 @@ export default function SignInPage() {
   }, [router, redirect]);
 
   return (
-    <div className="container mx-auto px-4 py-12 text-center">
+    <div className="text-center">
       <div className="loading-animation inline-block h-8 w-8 rounded-full"></div>
       <p className="mt-4">Redirecting to sign in...</p>
+    </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <div className="container mx-auto px-4 py-12 text-center">
+      <Suspense fallback={<div className="text-center">Loading...</div>}>
+        <SignInContent />
+      </Suspense>
     </div>
   );
 } 
