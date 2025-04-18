@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     siteName: "PSU Sublease",
     images: [
       {
-        url: "/preview.png",
+        url: "/preview_small.png",
         width: 600,
         height: 600,
         alt: "PSU Sublease Preview",
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     description: "Penn State University's student-built sublease platform. Browse, post, and find subleases near PSU University Park campus.",
     images: [
       {
-        url: "/preview.png",
+        url: "/preview_small.png",
         alt: "PSU Sublease Preview"
       }
     ]
