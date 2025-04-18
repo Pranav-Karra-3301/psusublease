@@ -33,6 +33,35 @@ export const metadata: Metadata = {
     icon: '/lion.png',
     apple: '/lion.png',
   },
+  openGraph: {
+    title: "PSU Sublease | Find & Post Subleases at Penn State",
+    description: "Penn State University's student-built sublease platform. Browse, post, and find subleases near PSU University Park campus.",
+    url: "https://psusublease.vercel.app/",
+    siteName: "PSU Sublease",
+    images: [
+      {
+        url: "/preview.png",
+        width: 600,
+        height: 600,
+        alt: "PSU Sublease Preview",
+        type: "image/png"
+      }
+    ],
+    locale: "en_US",
+    type: "website"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PSU Sublease | Find & Post Subleases at Penn State",
+    description: "Penn State University's student-built sublease platform. Browse, post, and find subleases near PSU University Park campus.",
+    images: [
+      {
+        url: "/preview.png",
+        alt: "PSU Sublease Preview"
+      }
+    ]
+  },
+  metadataBase: new URL("https://psusublease.vercel.app"),
 };
 
 export default function RootLayout({
