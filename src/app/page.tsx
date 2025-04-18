@@ -191,49 +191,33 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen pt-16">
-      {/* Hero section with retro pixelated design */}
-      <section className="py-12 bg-bg-secondary relative overflow-hidden">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-7xl font-bold text-text-primary mb-4 font-pixelify tracking-wide" style={{ 
-              // textShadow: '3px 3px 0 #2563eb, 5px 5px 0 #000',
-              letterSpacing: '0.05em'
-            }}>
-              PSU Sublease
-            </h1>
-            <p className="text-xl text-text-secondary mb-6">
-              Find and post subleases at Penn State University
-            </p>
-            <div className="flex flex-wrap justify-center gap-3 mb-6">
-              <div className="flex gap-2">
-                <Link href="/listings">
-                  <Button>Browse Listings</Button>
-                </Link>
-                <Link href="/requests">
-                  <Button variant="secondary">Browse Requests</Button>
-                </Link>
-              </div>
-              <div className="flex gap-2">
-                <Link href="/create">
-                  <Button variant="secondary">Post Sublease</Button>
-                </Link>
-                <Link href="/requests/create">
-                  <Button variant="secondary">Post Request</Button>
-                </Link>
-              </div>
+    <div className="flex flex-col min-h-screen pt-16 bg-white">
+      {/* Hero section with just the preview image and working buttons */}
+      <section className="py-12 bg-white relative overflow-hidden">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <img 
+            src="/preview.png" 
+            alt="Old Main Building at Penn State" 
+            className="w-full rounded-lg mb-8"
+          />
+          <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex gap-3">
+              <Link href="/listings">
+                <Button className="shadow-lg rounded-xl px-6 py-3 text-base font-semibold bg-primary text-white hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">Browse Listings</Button>
+              </Link>
+              <Link href="/requests">
+                <Button className="shadow-lg rounded-xl px-6 py-3 text-base font-semibold bg-primary text-white hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">Browse Requests</Button>
+              </Link>
+            </div>
+            <div className="flex gap-3">
+              <Link href="/create">
+                <Button className="shadow-lg rounded-xl px-6 py-3 text-base font-semibold bg-primary text-white hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">Post Sublease</Button>
+              </Link>
+              <Link href="/requests/create">
+                <Button className="shadow-lg rounded-xl px-6 py-3 text-base font-semibold bg-primary text-white hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">Post Request</Button>
+              </Link>
             </div>
           </div>
-        </div>
-        <div className="absolute inset-0 z-0 opacity-5">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent" style={{backgroundSize: '10px 10px', backgroundImage: 'linear-gradient(to right, #00000011 1px, transparent 1px), linear-gradient(to bottom, #00000011 1px, transparent 1px)'}}></div>
-        </div>
-        <div className="container mx-auto px-4 max-w-4xl">
-          <img 
-            src="/oldmain.png" 
-            alt="Old Main Building at Penn State" 
-            className="w-full rounded-lg "
-          />
         </div>
       </section>
       
@@ -242,9 +226,9 @@ export default function Home() {
 
       
       {/* How it works section */}
-      <section className="py-12 bg-bg-secondary">
+      <section className="py-12 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-text-primary mb-8 text-center font-pixelify">
+          <h2 className="text-2xl font-bold text-text-primary mb-8 text-center">
             How PSU Sublease Works
           </h2>
           
@@ -303,7 +287,7 @@ export default function Home() {
       {/* Current listings */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-text-primary mb-6 font-pixelify">
+          <h2 className="text-2xl font-bold text-text-primary mb-6">
             Current Listings
           </h2>
           
@@ -340,7 +324,7 @@ export default function Home() {
 
                 return (
                   <Card key={listing.id} className="overflow-hidden flex flex-col h-full">
-                    <div className="h-48 bg-bg-secondary relative -mx-6 -mt-6 mb-4">
+                    <div className="h-48 bg-white relative -mx-6 -mt-6 mb-4">
                       {imageUrl ? (
                         <img 
                           src={imageUrl} 
@@ -348,7 +332,7 @@ export default function Home() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-bg-secondary text-text-secondary">
+                        <div className="w-full h-full flex items-center justify-center bg-white text-text-secondary">
                           No Image
                         </div>
                       )}
@@ -358,7 +342,7 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                    <h3 className="text-xl font-semibold text-text-primary font-pixelify">
+                    <h3 className="text-xl font-semibold text-text-primary">
                       {apartmentName}
                     </h3>
                     <p className="text-text-secondary text-sm mb-2">{listing.location || 'State College'}</p>
@@ -392,7 +376,7 @@ export default function Home() {
               })}
             </div>
           ) : (
-            <div className="text-center py-8 bg-bg-secondary rounded-lg p-8">
+            <div className="text-center py-8 bg-white rounded-lg p-8">
               <h3 className="text-xl font-semibold text-text-primary mb-2">No Listings Currently</h3>
               <p className="text-text-secondary mb-6">
                 {user ? 'Be the first to post a sublease!' : 'Sign in to post your lease!'}
@@ -420,9 +404,9 @@ export default function Home() {
       </section>
       
       {/* Current requests */}
-      <section className="py-12 bg-bg-secondary">
+      <section className="py-12 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-text-primary mb-6 font-pixelify">
+          <h2 className="text-2xl font-bold text-text-primary mb-6">
             Current Requests
           </h2>
           
@@ -435,7 +419,7 @@ export default function Home() {
               {requests.map((request) => (
                 <Card key={request.id} variant="glass" className="flex flex-col h-full">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-text-primary font-pixelify">{request.area_preference}</h3>
+                    <h3 className="text-xl font-semibold text-text-primary">{request.area_preference}</h3>
                     <span className="text-sm text-text-secondary font-mono">{request.id.substring(0, 8)}...</span>
                   </div>
                   
@@ -487,7 +471,7 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 bg-bg-secondary rounded-lg p-8">
+            <div className="text-center py-8 bg-white rounded-lg p-8">
               <h3 className="text-xl font-semibold text-text-primary mb-2">No Requests Currently</h3>
               <p className="text-text-secondary mb-6">
                 {user ? 'Be the first to post a request!' : 'Sign in to post your request!'}

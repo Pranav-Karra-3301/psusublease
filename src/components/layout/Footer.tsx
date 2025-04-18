@@ -39,6 +39,12 @@ export default function Footer() {
               <Link href="/profile" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
                 My Profile
               </Link>
+              <Link href="/roadmap" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+                roadmap
+              </Link>
+              <Link href="/about" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+                about the developer
+              </Link>
             </nav>
           </div>
           

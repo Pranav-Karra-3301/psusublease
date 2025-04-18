@@ -30,13 +30,13 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center space-x-2">
           <Image 
-            src="/psusubleaseLogo.png" 
+            src="/oldmain.png" 
             alt="PSU Sublease Lion Logo" 
             width={40} 
             height={40} 
             className="rounded-md"
           />
-          <span className="text-xl font-semibold font-vt323 tracking-wide" style={{ letterSpacing: '0.05em' }}>
+          <span className="text-xl font-semibold tracking-wide" style={{ letterSpacing: '0.05em' }}>
             <span className="text-primary">PSU</span><span className="text-accent">Sublease</span>
           </span>
         </Link>
@@ -60,18 +60,18 @@ export default function Header() {
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-4">
           <div className="flex gap-2">
-            <Link href="/listings" className="px-4 py-2 rounded-md hover:bg-bg-secondary transition-colors">
+            <Link href="/listings" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
               Browse Listings
             </Link>
-            <Link href="/requests" className="px-4 py-2 rounded-md hover:bg-bg-secondary transition-colors">
+            <Link href="/requests" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
               Browse Requests
             </Link>
           </div>
           <div className="flex gap-2">
-            <Link href="/create" className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors">
+            <Link href="/create" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
               Post Sublease
             </Link>
-            <Link href="/requests/create" className="px-4 py-2 bg-accent text-white rounded-md hover:bg-accent/90 transition-colors">
+            <Link href="/requests/create" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
               Post Request
             </Link>
           </div>
@@ -89,7 +89,7 @@ export default function Header() {
               </button>
             </>
           ) : (
-            <Link href="/auth" className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors">
+            <Link href="/auth" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
               Sign In
             </Link>
           )}
@@ -102,28 +102,28 @@ export default function Header() {
           <div className="container mx-auto px-4 py-4 flex flex-col gap-2">
             <Link 
               href="/listings" 
-              className="px-4 py-2 hover:bg-bg-secondary rounded-md transition-colors"
+              className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
               onClick={() => setIsMenuOpen(false)}
             >
               Browse Listings
             </Link>
             <Link 
               href="/requests" 
-              className="px-4 py-2 hover:bg-bg-secondary rounded-md transition-colors"
+              className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
               onClick={() => setIsMenuOpen(false)}
             >
               Browse Requests
             </Link>
             <Link 
               href="/create" 
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+              className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
               onClick={() => setIsMenuOpen(false)}
             >
               Post Sublease
             </Link>
             <Link 
               href="/requests/create" 
-              className="px-4 py-2 bg-accent text-white rounded-md hover:bg-accent/90 transition-colors"
+              className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
               onClick={() => setIsMenuOpen(false)}
             >
               Post Request
@@ -148,7 +148,7 @@ export default function Header() {
             ) : (
               <Link 
                 href="/auth"
-                className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors"
+                className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Sign In
