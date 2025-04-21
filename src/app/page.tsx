@@ -1,500 +1,454 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useListings } from '@/hooks/useListings';
+import { useSubleaseRequests } from '@/hooks/useSubleaseRequests';
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import Image from 'next/image';
-import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { useAuthContext } from '@/components/auth/AuthProvider';
-import supabase from '@/utils/supabase';
+import Card from '@/components/ui/Card';
+
+// Simple wrapper component with hover animation
+const AnimatedContainer = ({ children }: { children: React.ReactNode }) => {
+  return <div className="h-full w-full hover-lift">{children}</div>;
+};
 
 export default function Home() {
-  const [listings, setListings] = useState<{
-    id: string;
-    apartment_name?: string;
-    location?: string;
-    price?: number;
-    start_date?: string;
-    end_date?: string;
-    bedrooms?: number;
-    bathrooms?: number;
-    image_url?: string;
-    created_at?: string;
-    user_id?: string;
-    contact_email?: string;
-    contact_phone?: string;
-    contact_name?: string;
-    images?: string[] | null;
-    custom_apartment?: string;
-    offer_price?: number;
-    apartment_id?: string;
-  }[]>([]);
-  
-  const [requests, setRequests] = useState<{
-    id: string;
-    area_preference?: string;
-    budget_min?: number;
-    budget_max?: number;
-    start_date?: string;
-    end_date?: string;
-    bedrooms?: number | null;
-    bathrooms?: number | null;
-    user_id?: string;
-    created_at?: string;
-    contact_email?: string;
-    contact_phone?: string;
-    preferred_apartments?: string[] | null;
-    distance_to_campus?: number | null;
-    contact_name?: string;
-  }[]>([]);
-  
+  const [listings, setListings] = useState<{ id: string; [key: string]: any }[]>([]);
+  const [requests, setRequests] = useState<{ id: string; [key: string]: any }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [requestsLoading, setRequestsLoading] = useState(true);
-  const { user } = useAuthContext();
+  const { getListings } = useListings();
+  const { getRequests } = useSubleaseRequests();
+  const { user } = useAuth();
 
   useEffect(() => {
-    async function fetchListings() {
-      setLoading(true);
+    const fetchData = async () => {
       try {
-        // First try to get listings with all fields
-        let { data, error } = await supabase
-          .from('listings')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(6);
+        setLoading(true);
         
-        if (error) {
-          console.error('Error fetching listings:', error);
-          return;
+        // Fetch actual current listings
+        console.log('Fetching listings...');
+        const { data: fetchedListings, error: listingsError } = await getListings();
+        console.log('Listings fetched:', fetchedListings, 'Error:', listingsError);
+        
+        if (fetchedListings) {
+          setListings(fetchedListings.slice(0, 3)); // Only get top 3
         }
         
-        // Log raw data for debugging
-        console.log('Raw listing data:', data);
+        // Fetch actual current requests
+        console.log('Fetching requests...');
+        const { data: fetchedRequests, error: requestsError } = await getRequests();
+        console.log('Requests fetched:', fetchedRequests, 'Error:', requestsError);
         
-        // Fetch user profiles for each listing
-        if (data && data.length > 0) {
-          const enhancedListings = await Promise.all(
-            data.map(async (listing) => {
-              const cleanedListing = Object.fromEntries(
-                Object.entries(listing).map(([key, value]) => [key, value === null ? undefined : value])
-              );
-              
-              if (listing.user_id) {
-                const { data: userData } = await supabase
-                  .from('profiles')
-                  .select('first_name, last_name, email, phone')
-                  .eq('id', listing.user_id)
-                  .single();
-                
-                return {
-                  ...cleanedListing,
-                  id: listing.id,
-                  contact_email: userData?.email || undefined,
-                  contact_phone: userData?.phone || undefined,
-                  contact_name: userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || undefined : undefined
-                };
-              }
-              return {
-                ...cleanedListing,
-                id: listing.id
-              };
-            })
-          );
-          
-          console.log('Enhanced listings:', enhancedListings);
-          setListings(enhancedListings);
-        } else {
-          setListings([]);
+        if (fetchedRequests) {
+          setRequests(fetchedRequests.slice(0, 3)); // Only get top 3
         }
       } catch (error) {
-        console.error('Error:', error);
-        setListings([]);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
-    }
+    };
 
-    async function fetchRequests() {
-      setRequestsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('sublease_requests')
-          .select('*')
-          .eq('is_verified', true)
-          .order('created_at', { ascending: false })
-          .limit(6);
-        
-        if (error) {
-          console.error('Error fetching requests:', error);
-          return;
-        }
-        
-        // Fetch user profiles for each request
-        if (data && data.length > 0) {
-          const enhancedRequests = await Promise.all(
-            data.map(async (request) => {
-              const cleanedRequest = Object.fromEntries(
-                Object.entries(request).map(([key, value]) => [key, value === null ? undefined : value])
-              );
-              
-              if (request.user_id) {
-                const { data: userData } = await supabase
-                  .from('profiles')
-                  .select('first_name, last_name, email, phone')
-                  .eq('id', request.user_id)
-                  .single();
-                
-                return {
-                  ...cleanedRequest,
-                  id: request.id,
-                  contact_email: userData?.email || undefined,
-                  contact_phone: userData?.phone || undefined,
-                  contact_name: userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || undefined : undefined
-                };
-              }
-              return {
-                ...cleanedRequest,
-                id: request.id
-              };
-            })
-          );
-          
-          setRequests(enhancedRequests);
-        } else {
-          setRequests([]);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        setRequests([]);
-      } finally {
-        setRequestsLoading(false);
-      }
-    }
-
-    fetchListings();
-    fetchRequests();
-  }, []);
-
-  // Debug output to see what's in the data
-  useEffect(() => {
-    if (listings.length > 0) {
-      console.log('Listing data sample:', listings[0]);
-    }
-  }, [listings]);
-
-  // Format date function
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-  };
+    fetchData();
+  }, [getListings, getRequests]);
 
   return (
-    <div className="flex flex-col min-h-screen pt-16 bg-white">
-      {/* Hero section with just the preview image and working buttons */}
-      <section className="py-12 bg-white relative overflow-hidden">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <img 
-            src="/preview.png" 
-            alt="Old Main Building at Penn State" 
-            className="w-full rounded-lg mb-8"
-          />
-          <div className="flex flex-wrap justify-center gap-4">
-            <div className="flex gap-3">
-              <Link href="/listings">
-                <Button className="shadow-lg rounded-xl px-6 py-3 text-base font-semibold bg-primary text-white hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">Browse Listings</Button>
-              </Link>
-              <Link href="/requests">
-                <Button className="shadow-lg rounded-xl px-6 py-3 text-base font-semibold bg-primary text-white hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">Browse Requests</Button>
-              </Link>
+    <div className="flex-1 bg-white">
+      {/* Hero section - clean, minimalist design inspired by Outlier */}
+      <section className="py-24 md:py-36 border-b border-border-light bg-bg-secondary">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-16">
+            {/* Left: Text and CTA */}
+            <div className="max-w-3xl flex-1">
+              
+              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-8 leading-tight">
+                Find Your Perfect <br/><span className="text-primary">Lease / Relet</span>
+              </h1>
+              <p className="text-xl text-gray-700 mb-10 max-w-2xl leading-relaxed">
+                Connect directly with Penn State students and property managers to find or post leases, subleases and relets.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link href="/listings">
+                  <Button size="lg" className="py-4 px-8 rounded-md border border-transparent shadow-sm">
+                    Browse Listings
+                  </Button>
+                </Link>
+                <Link href="/create">
+                  <Button size="lg" variant="secondary" className="py-4 px-8 rounded-md border border-gray-200 shadow-sm">
+                    Post Sublease
+                  </Button>
+                </Link>
+                {!user ? (
+                  <Link href="/auth-portal">
+                    <Button size="lg" variant="outline" className="py-4 px-8 rounded-md border border-primary bg-white text-primary shadow-sm">
+                      Sign In / Sign Up
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/profile">
+                    <Button size="lg" variant="outline" className="py-4 px-8 rounded-md border border-primary bg-white text-primary shadow-sm">
+                      My Profile
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
-            <div className="flex gap-3">
-              <Link href="/create">
-                <Button className="shadow-lg rounded-xl px-6 py-3 text-base font-semibold bg-primary text-white hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">Post Sublease</Button>
-              </Link>
-              <Link href="/requests/create">
-                <Button className="shadow-lg rounded-xl px-6 py-3 text-base font-semibold bg-primary text-white hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">Post Request</Button>
-              </Link>
+            {/* Right: Preview Image */}
+            <div className="flex-1 w-full md:w-auto flex items-center justify-center">
+              <Image
+                src="/lion.png"
+                alt="Preview"
+                width={600}
+                height={400}
+                className="w-full h-auto object-cover rounded-2xl"
+                priority
+              />
             </div>
           </div>
         </div>
       </section>
-      
 
-       
+      {/* Disclaimer Banner */}
+      <div className="bg-primary/5 border-y border-primary/10 py-4">
+        <div className="container mx-auto px-6 max-w-7xl text-center">
+          <p className="text-gray-700">
+            <span className="font-medium">PSU Leases is an aggregator only.</span> We do not collect any fees or handle any financial transactions between users.
+          </p>
+        </div>
+      </div>
 
-      
-      {/* How it works section */}
-      <section className="py-12 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-text-primary mb-8 text-center">
-            How PSU Sublease Works
+      {/* Featured images section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <h2 className="text-2xl font-semibold text-center mb-10 text-gray-900">
+            Connect with the PSU Community
           </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <AnimatedContainer>
+              <div className="rounded-lg overflow-hidden border border-border-light shadow-sm bg-white flex items-center justify-center min-h-[300px]">
+                <img 
+                  src="/2.png" 
+                  alt="PSU Campus"
+                  className="w-full h-auto object-cover"
+                  style={{ display: 'block' }}
+                />
+              </div>
+            </AnimatedContainer>
+            <AnimatedContainer>
+              <div className="rounded-lg overflow-hidden border border-border-light shadow-sm bg-white flex items-center justify-center min-h-[300px]">
+                <img 
+                  src="/3.png" 
+                  alt="Student Housing"
+                  className="w-full h-auto object-cover"
+                  style={{ display: 'block' }}
+                />
+              </div>
+            </AnimatedContainer>
+            <AnimatedContainer>
+              <div className="rounded-lg overflow-hidden border border-border-light shadow-sm bg-white flex items-center justify-center min-h-[300px]">
+                <img 
+                  src="/4.png" 
+                  alt="College Life"
+                  className="w-full h-auto object-cover"
+                  style={{ display: 'block' }}
+                />
+              </div>
+            </AnimatedContainer>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-24 bg-bg-secondary border-t border-border-light">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-semibold mb-4">How PSU Leases Works</h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Our platform connects Penn State students and property managers offering housing with those looking for spaces to lease, sublease or relet.
+            </p>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <Card className="text-center p-6">
-              <div className="mb-4 mx-auto bg-primary/10 w-16 h-16 flex items-center justify-center rounded-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-primary">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-medium mb-3">Create a Listing</h3>
+              <p className="text-gray-600">Post your apartment or room for lease, sublease, or relet with photos and details.</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-primary">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-text-primary mb-2">Browse Listings</h3>
-              <p className="text-text-secondary">
-                Search through available subleases near Penn State. Filter by price, location, and more.
-              </p>
-            </Card>
+              <h3 className="text-xl font-medium mb-3">Find Housing</h3>
+              <p className="text-gray-600">Browse available subleases or post your specific housing requirements.</p>
+            </div>
             
-            <Card className="text-center p-6">
-              <div className="mb-4 mx-auto bg-accent/10 w-16 h-16 flex items-center justify-center rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-accent">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-text-primary mb-2">Post Your Sublease</h3>
-              <p className="text-text-secondary">
-                List your apartment for others to see. Include details, photos, and your terms.
-              </p>
-            </Card>
-            
-            <Card className="text-center p-6">
-              <div className="mb-4 mx-auto bg-primary/10 w-16 h-16 flex items-center justify-center rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-primary">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-text-primary mb-2">Request a Sublease</h3>
-              <p className="text-text-secondary">
-                Looking for something specific? Post a detailed request with your requirements and budget.
-              </p>
-            </Card>
-            
-            <Card className="text-center p-6">
-              <div className="mb-4 mx-auto bg-primary/10 w-16 h-16 flex items-center justify-center rounded-full">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-primary">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-text-primary mb-2">Connect Directly</h3>
-              <p className="text-text-secondary">
-                Message users directly when you find a listing or request that matches your needs. Log in to view contact information.
-              </p>
-            </Card>
+              <h3 className="text-xl font-medium mb-3">Connect Directly</h3>
+              <p className="text-gray-600">Message potential landlords, subleasers, or tenants to arrange viewings and negotiate terms.</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Current listings */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-text-primary mb-6">
-            Current Listings
-          </h2>
-          
+      {/* Current Listings Section */}
+      <section className="py-24 bg-white border-t border-border-light">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="flex justify-between items-center mb-12">
+            <h2 className="text-3xl font-semibold text-gray-900">
+              Current Listings
+            </h2>
+            <Link href="/listings" className="text-primary hover:text-secondary font-medium flex items-center">
+              View all listings
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
           {loading ? (
-            <div className="text-center py-8">
-              <p>Loading listings...</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="loading-animation bg-white border border-border-light rounded-lg h-72"></div>
+              ))}
             </div>
-          ) : listings.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {listings.map((listing) => {
-                // Safely handle images array
-                let imageUrl = listing.image_url;
-                if (!imageUrl && listing.images) {
-                  if (Array.isArray(listing.images) && listing.images.length > 0) {
-                    imageUrl = listing.images[0];
-                  } else if (typeof listing.images === 'string') {
-                    // Handle case where images might be a JSON string
-                    try {
-                      const parsedImages = JSON.parse(listing.images);
-                      if (Array.isArray(parsedImages) && parsedImages.length > 0) {
-                        imageUrl = parsedImages[0];
-                      }
-                    } catch (e) {
-                      // If parsing fails, use the string directly
-                      imageUrl = listing.images;
-                    }
-                  }
-                }
-
-                // Get the best apartment name
-                const apartmentName = listing.apartment_name || 
-                                    listing.custom_apartment || 
-                                    (listing.apartment_id ? 'Apartment ' + listing.apartment_id : 'Apartment');
-
-                return (
-                  <Card key={listing.id} className="overflow-hidden flex flex-col h-full">
-                    <div className="h-48 bg-white relative -mx-6 -mt-6 mb-4">
-                      {imageUrl ? (
-                        <img 
-                          src={imageUrl} 
-                          alt={apartmentName} 
+          ) : listings && listings.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {listings.map((listing) => (
+                <AnimatedContainer key={listing.id || `listing-${Math.random()}`}>
+                  <Card padding="none" className="overflow-hidden">
+                    {listing.images && listing.images.length > 0 ? (
+                      <div className="h-52 relative">
+                        <div className="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 rounded-bl m-2 z-10">
+                          Available
+                        </div>
+                        <Image 
+                          src={listing.images[0]} 
+                          alt={listing.custom_apartment || 'Apartment Image'}
+                          width={400}
+                          height={200}
                           className="w-full h-full object-cover"
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-white text-text-secondary">
-                          No Image
-                        </div>
-                      )}
-                      {listing.id && (
-                        <div className="absolute top-2 right-2 bg-accent text-white px-2 py-1 rounded text-sm">
-                          ID: {listing.id.slice(0, 8)}
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="text-xl font-semibold text-text-primary">
-                      {apartmentName}
-                    </h3>
-                    <p className="text-text-secondary text-sm mb-2">{listing.location || 'State College'}</p>
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-accent text-xl font-bold">${listing.price || listing.offer_price || 0}/mo</span>
-                      <span className="text-text-secondary text-sm">
-                        {formatDate(listing.start_date)} - {formatDate(listing.end_date)}
-                      </span>
-                    </div>
-                    <div className="flex gap-4 text-sm text-text-secondary mb-4">
-                      <span>{listing.bedrooms || 0} {(listing.bedrooms === 1) ? 'Bed' : 'Beds'}</span>
-                      <span>•</span>
-                      <span>{listing.bathrooms || 0} {(listing.bathrooms === 1) ? 'Bath' : 'Baths'}</span>
-                    </div>
-                    {user && (
-                      <div className="mb-4 text-sm">
-                        <p className="text-text-secondary">
-                          <strong>Contact:</strong> {listing.contact_name || 'Anonymous'}<br />
-                          {listing.contact_email && <>{listing.contact_email}<br /></>}
-                          {listing.contact_phone && <>{listing.contact_phone}</>}
-                        </p>
+                      </div>
+                    ) : (
+                      <div className="h-52 bg-gray-100 flex items-center justify-center border-b border-border-light">
+                        <span className="text-gray-400">No image available</span>
                       </div>
                     )}
-                    <div className="mt-auto">
+                    <div className="p-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">
+                        {listing.custom_apartment || 'Apartment Sublease'}
+                      </h3>
+                      <div className="flex items-center text-gray-600 text-sm mb-3">
+                        <span>{listing.bedrooms} bed</span>
+                        <span className="mx-1">•</span>
+                        <span>{listing.bathrooms} bath</span>
+                        {listing.area_preference && (
+                          <>
+                            <span className="mx-1">•</span>
+                            <span>{listing.area_preference}</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-primary font-semibold mb-4">${listing.offer_price}/mo</div>
                       <Link href={`/listings/${listing.id}`}>
-                        <Button variant="primary" fullWidth>View Details</Button>
+                        <Button variant="primary" fullWidth className="text-sm">View Details</Button>
                       </Link>
                     </div>
                   </Card>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 bg-white rounded-lg p-8">
-              <h3 className="text-xl font-semibold text-text-primary mb-2">No Listings Currently</h3>
-              <p className="text-text-secondary mb-6">
-                {user ? 'Be the first to post a sublease!' : 'Sign in to post your lease!'}
-              </p>
-              {user ? (
-                <Link href="/create">
-                  <Button>Post Your Sublease</Button>
-                </Link>
-              ) : (
-                <Link href="/auth">
-                  <Button>Sign In</Button>
-                </Link>
-              )}
-            </div>
-          )}
-          
-          {listings.length > 0 && (
-            <div className="mt-8 text-center">
-              <Link href="/listings">
-                <Button variant="secondary">View All Listings</Button>
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
-      
-      {/* Current requests */}
-      <section className="py-12 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-text-primary mb-6">
-            Current Requests
-          </h2>
-          
-          {requestsLoading ? (
-            <div className="text-center py-8">
-              <p>Loading requests...</p>
-            </div>
-          ) : requests.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {requests.map((request) => (
-                <Card key={request.id} variant="glass" className="flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-text-primary">{request.area_preference}</h3>
-                    <span className="text-sm text-text-secondary font-mono">{request.id.substring(0, 8)}...</span>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <span className="text-accent text-lg font-bold">${request.budget_min} - ${request.budget_max}</span>
-                    <span className="text-text-secondary text-sm ml-2">per month</span>
-                  </div>
-                  
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center text-text-secondary text-sm">
-                      <span className="flex-1">Duration</span>
-                      <span>{formatDate(request.start_date)} - {formatDate(request.end_date)}</span>
-                    </div>
-                    
-                    {(request.bedrooms || request.bathrooms) && (
-                      <div className="flex items-center text-text-secondary text-sm">
-                        <span className="flex-1">Space</span>
-                        <span>
-                          {request.bedrooms && `${request.bedrooms} ${request.bedrooms === 1 ? 'Bed' : 'Beds'}`}
-                          {request.bedrooms && request.bathrooms && ' • '}
-                          {request.bathrooms && `${request.bathrooms} ${request.bathrooms === 1 ? 'Bath' : 'Baths'}`}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {user && (
-                    <div className="mb-4 text-sm">
-                      <p className="text-text-secondary">
-                        <strong>Contact:</strong> {request.contact_name || 'Anonymous'}<br />
-                        {request.contact_email && <>{request.contact_email}<br /></>}
-                        {request.contact_phone && <>{request.contact_phone}</>}
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="mt-auto pt-4 border-t border-border-light">
-                    {user ? (
-                      <Link href={`/requests/${request.id}`}>
-                        <Button variant="primary" fullWidth>View Details</Button>
-                      </Link>
-                    ) : (
-                      <Link href="/auth">
-                        <Button variant="primary" fullWidth>Sign in to Contact</Button>
-                      </Link>
-                    )}
-                  </div>
-                </Card>
+                </AnimatedContainer>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 bg-white rounded-lg p-8">
-              <h3 className="text-xl font-semibold text-text-primary mb-2">No Requests Currently</h3>
-              <p className="text-text-secondary mb-6">
-                {user ? 'Be the first to post a request!' : 'Sign in to post your request!'}
-              </p>
-              {user ? (
-                <Link href="/requests/create">
-                  <Button>Post Your Request</Button>
+            <Card className="text-center py-12 bg-white border-primary/10">
+              <p className="text-gray-600 mb-4">No listings available at the moment.</p>
+              <p className="text-gray-500 mb-6">Be the first to create a listing and find a subleaser!</p>
+              <Link href="/create" className="inline-block">
+                <Button>Post a Listing</Button>
+              </Link>
+            </Card>
+          )}
+        </div>
+      </section>
+
+      {/* Sublease Requests Section */}
+      <section className="py-24 bg-bg-secondary border-t border-border-light">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="flex justify-between items-center mb-12">
+            <h2 className="text-3xl font-semibold text-gray-900">
+              Current Requests
+            </h2>
+            <Link href="/requests" className="text-primary hover:text-secondary font-medium flex items-center">
+              View all requests
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="loading-animation bg-white border border-border-light rounded-lg h-64"></div>
+              ))}
+            </div>
+          ) : requests && requests.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {requests.map((request) => (
+                <AnimatedContainer key={request.id || `request-${Math.random()}`}>
+                  <Card variant="highlight" className="h-full">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Looking in {request.area_preference}
+                      </h3>
+                      <div className="bg-primary/10 text-primary text-xs px-3 py-1 rounded-full">
+                        Request
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-5 mb-6">
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Budget</p>
+                        <p className="font-medium">${request.budget_min} - ${request.budget_max}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Dates</p>
+                        <p className="font-medium">{new Date(request.start_date).toLocaleDateString()} - {new Date(request.end_date).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Bedrooms</p>
+                        <p className="font-medium">{request.bedrooms || 'Any'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Bathrooms</p>
+                        <p className="font-medium">{request.bathrooms || 'Any'}</p>
+                      </div>
+                    </div>
+                    <Link href={`/requests/${request.id}`}>
+                      <Button variant="secondary" fullWidth className="text-sm">View Details</Button>
+                    </Link>
+                  </Card>
+                </AnimatedContainer>
+              ))}
+            </div>
+          ) : (
+            <Card className="text-center py-12 bg-white border-primary/10">
+              <p className="text-gray-600 mb-4">No sublease requests available at the moment.</p>
+              <p className="text-gray-500 mb-6">Looking for a sublease? Create a request to let others know what you're looking for!</p>
+              <Link href="/requests/create" className="mt-4 inline-block">
+                <Button>Post a Request</Button>
+              </Link>
+            </Card>
+          )}
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-24 bg-white border-t border-border-light">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <h2 className="text-3xl font-semibold text-center text-gray-900 mb-16">
+            Benefits of PSU Leases
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <AnimatedContainer>
+              <div className="text-center">
+                <div className="bg-primary/10 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-primary">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-gray-900 mb-3">No Fees</h3>
+                <p className="text-gray-600">We don't collect fees or process payments — connect directly with students and property managers.</p>
+              </div>
+            </AnimatedContainer>
+            
+            <AnimatedContainer>
+              <div className="text-center">
+                <div className="bg-primary/10 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-primary">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-gray-900 mb-3">Penn State Community</h3>
+                <p className="text-gray-600">Platform exclusively for Penn State students and local property managers, ensuring reliable connections.</p>
+              </div>
+            </AnimatedContainer>
+            
+            <AnimatedContainer>
+              <div className="text-center">
+                <div className="bg-primary/10 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-primary">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-gray-900 mb-3">Flexible Terms</h3>
+                <p className="text-gray-600">Find short-term or long-term subleases that fit your specific schedule and needs.</p>
+              </div>
+            </AnimatedContainer>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-6 text-center max-w-4xl">
+          <div className="bg-primary rounded-xl py-16 px-8">
+            <div className="flex items-center justify-center mb-8">
+              <Image 
+                src="/lion.png" 
+                alt="Penn State Lion" 
+                width={60} 
+                height={60}
+                className="mr-4"
+              />
+              <h2 className="text-3xl font-bold text-white">Join the PSU Leases Community</h2>
+            </div>
+            
+            <p className="text-lg text-white mb-4 max-w-2xl mx-auto">
+              Whether you're looking for a lease/sublease or have a space to offer, connect with fellow Penn State students and property managers today.
+            </p>
+            <p className="text-base text-white/80 mb-10 max-w-2xl mx-auto">
+              Remember: PSU Leases is an aggregator platform that does not collect any fees or handle financial transactions between users.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link href="/listings">
+                <Button size="lg" className="py-4 px-8 rounded-md bg-white text-primary border-none">
+                  Browse Listings
+                </Button>
+              </Link>
+              <Link href="/requests">
+                <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-transparent border-2 border-white hover:bg-white/10 text-white">
+                  View Requests
+                </Button>
+              </Link>
+              {!user ? (
+                <Link href="/auth-portal">
+                  <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-primary/20 border-2 border-white text-white">
+                    Sign In / Sign Up
+                  </Button>
                 </Link>
               ) : (
-                <Link href="/auth">
-                  <Button>Sign In</Button>
+                <Link href="/profile">
+                  <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-primary/20 border-2 border-white text-white">
+                    My Profile
+                  </Button>
                 </Link>
               )}
             </div>
-          )}
-          
-          {requests.length > 0 && (
-            <div className="mt-8 text-center">
-              <Link href="/requests">
-                <Button variant="secondary">View All Requests</Button>
-              </Link>
-            </div>
-          )}
+          </div>
         </div>
       </section>
     </div>

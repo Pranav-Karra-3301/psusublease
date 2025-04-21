@@ -7,7 +7,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['localhost', 'xjwndkjwaxhxqtmfeulp.supabase.co', 'jbbdxvmlktaqapclgolt.supabase.co', 'psusublease.vercel.app'],
+    remotePatterns: [],
+    domains: ['localhost', 'xjwndkjwaxhxqtmfeulp.supabase.co', 'jbbdxvmlktaqapclgolt.supabase.co', 'psuleases.com', 'images.unsplash.com'],
   },
 };
 

@@ -50,16 +50,23 @@ export function useAuth() {
 
   const signUp = async (email: string, password: string) => {
     try {
+      // Use the current origin for the redirect URL
+      const redirectTo = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth?mode=signin` 
+        : '/auth?mode=signin';
+        
       const { error, data } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
-          emailRedirectTo: 'https://psusublease.vercel.app/auth'
+          emailRedirectTo: redirectTo
         }
       });
+      
       if (error) throw error;
       return { success: true, user: data.user };
     } catch (error: any) {
+      console.error('Sign up error:', error);
       return { success: false, error: error.message };
     }
   };

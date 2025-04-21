@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import supabase from '@/utils/supabase';
 import CreateRequestForm from '@/components/requests/CreateRequestForm';
 
-export default function EditRequestPage() {
+function EditRequestContent() {
   const params = useParams();
   const router = useRouter();
   const { user, isLoading } = useAuthContext();
@@ -119,5 +119,13 @@ export default function EditRequestPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function EditRequestPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8 text-center">Loading edit form...</div>}>
+      <EditRequestContent />
+    </Suspense>
   );
 } 

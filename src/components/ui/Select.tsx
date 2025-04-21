@@ -1,6 +1,7 @@
 'use client';
 
-import { SelectHTMLAttributes, forwardRef } from 'react';
+import { SelectHTMLAttributes, forwardRef, ReactNode } from 'react';
+import { cn } from '@/utils/cn';
 
 interface Option {
   value: string;
@@ -14,6 +15,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   helperText?: string;
 }
 
+// Main Select component (basic version)
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, options, error, helperText, className = '', ...props }, ref) => {
     return (
@@ -60,6 +62,97 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
   }
 );
 
-Select.displayName = 'Select';
+// Additional components for the enhanced select
+interface SelectTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
+}
 
-export default Select; 
+const SelectTrigger = forwardRef<HTMLButtonElement, SelectTriggerProps>(
+  ({ className, children, ...props }, ref) => (
+    <button
+      ref={ref}
+      className={cn(
+        "flex items-center justify-between w-full px-4 py-2 bg-bg-secondary border border-border-light rounded-lg text-text-primary focus:outline-none focus:ring-1 focus:ring-accent transition-all duration-200",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <svg
+        className="w-4 h-4 ml-2"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </button>
+  )
+);
+
+interface SelectValueProps {
+  children: ReactNode;
+  placeholder?: string;
+}
+
+const SelectValue = ({ children, placeholder }: SelectValueProps) => (
+  <span className={cn(
+    "block truncate",
+    !children && "text-text-secondary/50"
+  )}>
+    {children || placeholder || "Select an option"}
+  </span>
+);
+
+interface SelectContentProps {
+  children: ReactNode;
+  className?: string;
+}
+
+const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(
+  ({ children, className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-bg-secondary py-1 shadow-lg border border-border-light",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+);
+
+interface SelectItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
+  children: ReactNode;
+  value: string;
+}
+
+const SelectItem = forwardRef<HTMLLIElement, SelectItemProps>(
+  ({ className, children, ...props }, ref) => (
+    <li
+      ref={ref}
+      className={cn(
+        "relative cursor-pointer select-none py-2 px-4 text-text-primary hover:bg-bg-primary/10",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </li>
+  )
+);
+
+Select.displayName = 'Select';
+SelectTrigger.displayName = 'SelectTrigger';
+SelectValue.displayName = 'SelectValue';
+SelectContent.displayName = 'SelectContent';
+SelectItem.displayName = 'SelectItem';
+
+export default Select;
+export { SelectTrigger, SelectValue, SelectContent, SelectItem }; 

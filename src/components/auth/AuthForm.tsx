@@ -1,54 +1,184 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import supabase from '@/utils/supabase';
 import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type AuthMode = 'signin' | 'signup';
+type UserType = 'tenant' | 'agency' | null;
 
-export default function AuthForm() {
-  const [mode, setMode] = useState<AuthMode>('signin');
+interface AuthFormProps {
+  initialMode?: AuthMode;
+  redirect?: string | null;
+}
+
+export default function AuthForm({ initialMode = 'signin', redirect = null }: AuthFormProps) {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [userType, setUserType] = useState<UserType>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   
   const { signIn, signUp, signOut, user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = redirect || searchParams.get('redirect');
+
+  // Update mode when initialMode prop changes
+  useEffect(() => {
+    setMode(initialMode);
+    
+    // Check for pre-selected user type from auth-portal page
+    if (mode === 'signup' && typeof window !== 'undefined') {
+      const savedUserType = localStorage.getItem('selectedUserType') as UserType;
+      if (savedUserType) {
+        setUserType(savedUserType);
+      }
+    }
+  }, [initialMode, mode]);
+
+  // Redirect user when logged in and redirect parameter exists
+  useEffect(() => {
+    if (user && redirectPath) {
+      router.push(redirectPath);
+    }
+  }, [user, redirectPath, router]);
+
+  // Add this function to the AuthForm component
+  useEffect(() => {
+    // Check if user is logged in and there's pending profile data
+    const createPendingProfile = async () => {
+      if (user && localStorage.getItem('pendingProfile')) {
+        try {
+          const profileData = JSON.parse(localStorage.getItem('pendingProfile') || '{}');
+          
+          // Make sure the profile ID matches the current user
+          if (profileData.id === user.id) {
+            console.log('Creating profile for verified user:', user.id);
+            
+            // Get user token for authentication
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            
+            if (!token) {
+              console.error('No access token available');
+              return;
+            }
+            
+            // Call the API endpoint to create profile
+            const response = await fetch('/api/create-profile', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                profile: profileData,
+                userToken: token
+              })
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+              console.error('Profile creation error:', result.error);
+            } else {
+              console.log('Profile created successfully');
+              // Clear the pending profile data
+              localStorage.removeItem('pendingProfile');
+            }
+          }
+        } catch (error) {
+          console.error('Error creating pending profile:', error);
+        }
+      }
+    };
+    
+    createPendingProfile();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
+    
+    // Clear the selected user type from localStorage if we're in signup mode
+    if (mode === 'signup' && typeof window !== 'undefined') {
+      localStorage.removeItem('selectedUserType');
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setMessage({
+        text: 'Please enter a valid email address',
+        type: 'error'
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Validate password
+    if (password.length < 6) {
+      setMessage({
+        text: 'Password must be at least 6 characters long',
+        type: 'error'
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Validate user type for signup
+    if (mode === 'signup' && !userType) {
+      setMessage({
+        text: 'Please select whether you are a tenant or property manager',
+        type: 'error'
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       let result;
       
       if (mode === 'signin') {
         result = await signIn(email, password);
+        
+        // If sign-in is successful, redirect to profile
+        if (result.success && result.user) {
+          const redirectTo = redirectPath || '/profile';
+          router.push(redirectTo);
+          return;
+        }
       } else {
         result = await signUp(email, password);
         
-        // If signup successful, add name and phone to profile
+        // If signup successful, store profile info in local storage temporarily
+        // We'll create the profile after email verification
         if (result.success && result.user) {
-          const nameArray = name.split(' ');
-          const firstName = nameArray[0] || '';
-          const lastName = nameArray.slice(1).join(' ') || '';
-          
-          const { error } = await supabase
-            .from('profiles')
-            .upsert({
+          try {
+            // Store profile data in local storage to use after verification
+            const profileData = {
               id: result.user.id,
-              first_name: firstName,
-              last_name: lastName,
+              first_name: name.split(' ')[0] || '',
+              last_name: name.split(' ').slice(1).join(' ') || '',
               phone: phone,
               email: email,
-              preferred_contact: 'email'
-            });
+              preferred_contact: 'email',
+              user_type: userType
+            };
             
-          if (error) throw new Error('Failed to update profile information');
+            localStorage.setItem('pendingProfile', JSON.stringify(profileData));
+            
+            console.log('Profile data stored for later creation after verification');
+          } catch (profileError) {
+            console.error('Failed to store profile data:', profileError);
+            // Continue with signup - we'll handle profile creation later
+          }
         }
       }
 
@@ -66,9 +196,28 @@ export default function AuthForm() {
       setPassword('');
       setName('');
       setPhone('');
+      setUserType(null);
+      
+      // If signed up, switch to sign in mode
+      if (mode === 'signup') {
+        setMode('signin');
+      }
     } catch (error: any) {
+      console.error('Auth error:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = error.message;
+      
+      if (errorMessage.includes('User already registered')) {
+        errorMessage = 'This email is already registered. Please sign in instead.';
+      } else if (errorMessage.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please try again.';
+      } else if (errorMessage.includes('Email not confirmed')) {
+        errorMessage = 'Please verify your email before signing in. Check your inbox for a confirmation link.';
+      }
+      
       setMessage({
-        text: error.message,
+        text: errorMessage,
         type: 'error'
       });
     } finally {
@@ -104,13 +253,22 @@ export default function AuthForm() {
             {message.text}
           </div>
         )}
-        <button 
-          onClick={handleSignOut}
-          disabled={loading}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors w-full"
-        >
-          {loading ? 'Signing out...' : 'Sign Out'}
-        </button>
+        <p className="mb-6">You are now signed in to your account.</p>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => router.push('/profile')}
+            className="w-full bg-primary text-white py-2 px-4 rounded hover:bg-primary/90 transition-colors"
+          >
+            Go to Profile
+          </button>
+          <button 
+            onClick={handleSignOut}
+            className="w-full bg-gray-100 text-gray-800 py-2 px-4 rounded hover:bg-gray-200 transition-colors"
+            disabled={loading}
+          >
+            {loading ? 'Signing out...' : 'Sign Out'}
+          </button>
+        </div>
       </div>
     );
   }
@@ -166,6 +324,36 @@ export default function AuthForm() {
                 className="w-full px-3 py-2 border border-border-light rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 required
               />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block mb-2 text-sm font-medium text-text-primary">
+                I am a:
+              </label>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setUserType('tenant')}
+                  className={`flex-1 py-2 px-4 rounded-md border transition-colors ${
+                    userType === 'tenant'
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-gray-700 border-border-light hover:border-primary'
+                  }`}
+                >
+                  Tenant/Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserType('agency')}
+                  className={`flex-1 py-2 px-4 rounded-md border transition-colors ${
+                    userType === 'agency'
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-gray-700 border-border-light hover:border-primary'
+                  }`}
+                >
+                  Property Manager
+                </button>
+              </div>
             </div>
           </>
         )}
