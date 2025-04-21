@@ -14,6 +14,7 @@ type StatsType = {
   agencyListings: number;
   requests: number;
   agencies: number;
+  facebookListings: number;
 };
 
 type User = {
@@ -58,6 +59,7 @@ export default function AdminDashboardPage() {
     agencyListings: 0,
     requests: 0,
     agencies: 0,
+    facebookListings: 0,
   });
   const [users, setUsers] = useState<User[]>([]);
   const [agencies, setAgencies] = useState<Agency[]>([]);
@@ -65,6 +67,7 @@ export default function AdminDashboardPage() {
   const [requests, setRequests] = useState<Request[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [agencyListings, setAgencyListings] = useState<any[]>([]);
+  const [facebookListings, setFacebookListings] = useState<any[]>([]);
 
   // Verify admin status and fetch data
   useEffect(() => {
@@ -103,13 +106,15 @@ export default function AdminDashboardPage() {
         { data: listingData, error: listingError },
         { data: agencyListingData, error: agencyListingError },
         { data: requestData, error: requestError },
-        { data: agencyData, error: agencyError }
+        { data: agencyData, error: agencyError },
+        { data: facebookListingData, error: facebookListingError }
       ] = await Promise.all([
         supabase.from('profiles').select('*'),
         supabase.from('listings').select('*'),
-        supabase.from('agency_listings').select('*'),
+        supabase.from('agency_listings').select('*, agencies(*)'),
         supabase.from('sublease_requests').select('*'),
-        supabase.from('agencies').select('*')
+        supabase.from('agencies').select('*'),
+        supabase.from('facebook_listings').select('*')
       ]);
 
       if (userError) throw userError;
@@ -117,6 +122,7 @@ export default function AdminDashboardPage() {
       if (agencyListingError) throw agencyListingError;
       if (requestError) throw requestError;
       if (agencyError) throw agencyError;
+      if (facebookListingError) throw facebookListingError;
 
       setStats({
         users: userData?.length || 0,
@@ -124,6 +130,7 @@ export default function AdminDashboardPage() {
         agencyListings: agencyListingData?.length || 0,
         requests: requestData?.length || 0,
         agencies: agencyData?.length || 0,
+        facebookListings: facebookListingData?.length || 0,
       });
 
       setUsers(userData || []);
@@ -131,6 +138,7 @@ export default function AdminDashboardPage() {
       setAgencyListings(agencyListingData || []);
       setRequests(requestData || []);
       setAgencies(agencyData || []);
+      setFacebookListings(facebookListingData || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -221,6 +229,128 @@ export default function AdminDashboardPage() {
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const deleteListing = async (id: string, type: 'regular' | 'agency' | 'facebook') => {
+    // Add confirmation dialog
+    if (!window.confirm('Are you sure you want to delete this listing? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      if (type === 'regular') {
+        // First delete any associated images from storage
+        const { data: listing } = await supabase
+          .from('listings')
+          .select('images')
+          .eq('id', id)
+          .single();
+        
+        if (listing?.images) {
+          for (const image of listing.images) {
+            const { error: storageError } = await supabase.storage
+              .from('listing-images')
+              .remove([image]);
+            if (storageError) console.error('Error deleting image:', storageError);
+          }
+        }
+
+        // Then delete the listing
+        const { error } = await supabase
+          .from('listings')
+          .delete()
+          .eq('id', id);
+          
+        if (error) throw error;
+        
+        setListings(listings.filter(listing => listing.id !== id));
+      } else if (type === 'agency') {
+        // First get the floor plans to delete their images
+        const { data: floorPlans } = await supabase
+          .from('floor_plans')
+          .select('images')
+          .eq('agency_listing_id', id);
+        
+        // Delete floor plan images from storage
+        if (floorPlans) {
+          for (const plan of floorPlans) {
+            if (plan.images) {
+              for (const image of plan.images) {
+                const { error: storageError } = await supabase.storage
+                  .from('listing-images')
+                  .remove([image]);
+                if (storageError) console.error('Error deleting floor plan image:', storageError);
+              }
+            }
+          }
+        }
+
+        // Delete associated floor plans
+        const { error: floorPlansError } = await supabase
+          .from('floor_plans')
+          .delete()
+          .eq('agency_listing_id', id);
+        
+        if (floorPlansError) throw floorPlansError;
+        
+        // Get and delete agency listing images
+        const { data: agencyListing } = await supabase
+          .from('agency_listings')
+          .select('images')
+          .eq('id', id)
+          .single();
+        
+        if (agencyListing?.images) {
+          for (const image of agencyListing.images) {
+            const { error: storageError } = await supabase.storage
+              .from('listing-images')
+              .remove([image]);
+            if (storageError) console.error('Error deleting agency listing image:', storageError);
+          }
+        }
+
+        // Finally delete the agency listing
+        const { error } = await supabase
+          .from('agency_listings')
+          .delete()
+          .eq('id', id);
+          
+        if (error) throw error;
+        
+        setAgencyListings(agencyListings.filter(listing => listing.id !== id));
+      } else if (type === 'facebook') {
+        // Delete any images associated with the Facebook listing
+        const { data: fbListing } = await supabase
+          .from('facebook_listings')
+          .select('images')
+          .eq('id', id)
+          .single();
+        
+        if (fbListing?.images) {
+          for (const image of fbListing.images) {
+            const { error: storageError } = await supabase.storage
+              .from('listing-images')
+              .remove([image]);
+            if (storageError) console.error('Error deleting Facebook listing image:', storageError);
+          }
+        }
+
+        // Delete the Facebook listing
+        const { error } = await supabase
+          .from('facebook_listings')
+          .delete()
+          .eq('id', id);
+          
+        if (error) throw error;
+        
+        setFacebookListings(facebookListings.filter(listing => listing.id !== id));
+      }
+      
+      alert('Listing deleted successfully');
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      alert('Error deleting listing. Please try again.');
+    }
   };
 
   if (loading) {
@@ -315,12 +445,14 @@ export default function AdminDashboardPage() {
             <Card className="p-6">
               <h3 className="text-text-secondary text-sm font-medium">Total Listings</h3>
               <p className="text-3xl font-bold text-text-primary mt-2">
-                {stats.listings + stats.agencyListings}
+                {stats.listings + stats.agencyListings + stats.facebookListings}
               </p>
               <div className="flex items-center text-xs text-text-secondary mt-2">
                 <span>{stats.listings} Individual</span>
                 <span className="mx-2">•</span>
                 <span>{stats.agencyListings} Agency</span>
+                <span className="mx-2">•</span>
+                <span>{stats.facebookListings} Facebook</span>
               </div>
             </Card>
             
@@ -490,13 +622,18 @@ export default function AdminDashboardPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary tracking-wider">
                       Created
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-border-light">
                   {listings.map((listing) => (
                     <tr key={listing.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
-                        {listing.property_name || 'Unnamed Property'}
+                        <Link href={`/listings/${listing.id}`} className="hover:text-accent hover:underline">
+                          {listing.property_name || 'Unnamed Property'}
+                        </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {listing.address || 'No address provided'}
@@ -510,12 +647,23 @@ export default function AdminDashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {formatDate(listing.created_at)}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <Button 
+                          size="sm" 
+                          variant="error"
+                          onClick={() => deleteListing(listing.id, 'regular')}
+                        >
+                          Delete
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                   {agencyListings.map((listing) => (
                     <tr key={listing.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
-                        {listing.property_name || 'Unnamed Property'}
+                        <Link href={`/agency-listings/${listing.id}`} className="hover:text-accent hover:underline">
+                          {listing.property_name || 'Unnamed Property'}
+                        </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {listing.address || 'No address provided'}
@@ -528,6 +676,45 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {formatDate(listing.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <Button 
+                          size="sm" 
+                          variant="error"
+                          onClick={() => deleteListing(listing.id, 'agency')}
+                        >
+                          Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {facebookListings.map((listing) => (
+                    <tr key={listing.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
+                        <Link href={`/facebook-listings/${listing.id}`} className="hover:text-accent hover:underline">
+                          {listing.custom_apartment || (listing.parsed_listing_data && listing.parsed_listing_data.apartment_name) || 'Facebook Listing'}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                        {listing.address || (listing.parsed_listing_data && listing.parsed_listing_data.address) || 'No address provided'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                        {listing.author_username || 'Anonymous'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                        Facebook
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                        {formatDate(listing.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <Button 
+                          size="sm" 
+                          variant="error"
+                          onClick={() => deleteListing(listing.id, 'facebook')}
+                        >
+                          Delete
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -602,7 +789,94 @@ export default function AdminDashboardPage() {
         )}
         
         {activeTab === 'facebook' && (
-          <CreateFacebookListingForm />
+          <>
+            <Card className="overflow-hidden mb-8">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-border-light">
+                  <thead>
+                    <tr className="bg-bg-secondary">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary tracking-wider">
+                        Property
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary tracking-wider">
+                        Address
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary tracking-wider">
+                        Author
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary tracking-wider">
+                        Price
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary tracking-wider">
+                        Created
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-border-light">
+                    {facebookListings.map((listing) => (
+                      <tr key={listing.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
+                          <Link href={`/facebook-listings/${listing.id}`} className="hover:text-accent hover:underline">
+                            {listing.custom_apartment || 
+                             (listing.parsed_listing_data && listing.parsed_listing_data.apartment_name) || 
+                             'Facebook Listing'}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                          {listing.address || 
+                           (listing.parsed_listing_data && listing.parsed_listing_data.address) || 
+                           'No address provided'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                          {listing.author_username || 'Anonymous'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                          ${listing.offer_price || 
+                            (listing.parsed_listing_data && listing.parsed_listing_data.price) || 
+                            'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                          {formatDate(listing.created_at)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="flex space-x-2">
+                            <Button 
+                              size="sm" 
+                              variant="error"
+                              onClick={() => deleteListing(listing.id, 'facebook')}
+                            >
+                              Delete
+                            </Button>
+                            {listing.facebook_post_link && (
+                              <a 
+                                href={listing.facebook_post_link} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-md bg-blue-100 text-blue-800 hover:bg-blue-200"
+                              >
+                                FB Post
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {facebookListings.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-4 text-center text-sm text-text-secondary">
+                          No Facebook listings found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+            <CreateFacebookListingForm />
+          </>
         )}
       </div>
     </div>
