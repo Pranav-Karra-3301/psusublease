@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import ListingDetail from '@/components/listings/ListingDetail';
@@ -102,6 +102,7 @@ function ListingPageContent() {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { getListing } = useListings();
+  const router = useRouter();
   
   // Fetch the real listing data from Supabase
   useEffect(() => {
@@ -119,25 +120,26 @@ function ListingPageContent() {
         
         if (error) {
           console.error('Error fetching listing:', error);
-          // Try to use mock data as fallback
-          const mockListing = mockListings.find(l => l.id === id);
-          if (mockListing && isMounted) {
-            setListing(mockListing);
-          } else if (isMounted) {
-            setListing(null);
-          }
+          setListing(null);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Redirect to agency-listings page if this is an agency listing
+        if (data && data.is_agency_listing) {
+          router.replace(`/agency-listings/${id}`);
           return;
         }
         
         if (data) {
-          // Check if the current user is the owner of this listing
-          if (user && data.user_id === user.id && isMounted) {
+          // Check if the current user is the owner
+          if (user && data.user_id === user.id) {
             setIsOwner(true);
           }
           
           // Fetch owner profile for contact info
           let contactInfo = {
-            email: 'contact@psusublease.com', // Default fallback
+            email: 'pranavkarra001@gmail.com', // Default fallback
             phone: '', 
             preferredContact: 'Email'
           };
@@ -204,7 +206,7 @@ function ListingPageContent() {
     return () => {
       isMounted = false;
     };
-  }, [id, getListing, user]);
+  }, [id, getListing, user, router]);
   
   // Show loading state
   if (isLoading) {
@@ -223,6 +225,12 @@ function ListingPageContent() {
   if (!listing) {
     return notFound();
   }
+  
+  const handleContactClick = () => {
+    // Check if we have user email, otherwise use default
+    const contactEmail = listing?.user_email || 
+      'pranavkarra001@gmail.com'; // Default fallback
+  };
   
   return (
     <div className="container mx-auto px-4 py-8">

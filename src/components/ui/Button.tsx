@@ -22,10 +22,10 @@ export default function Button({
   ...props 
 }: ButtonProps) {
   const variantClasses = {
-    primary: 'bg-primary text-white hover:bg-primary/90',
-    secondary: 'border border-primary text-primary hover:bg-primary/10',
-    outline: 'bg-transparent border border-border-light text-text-primary hover:bg-bg-secondary',
-    danger: 'bg-error text-white hover:bg-error/90',
+    primary: 'bg-primary text-white border border-transparent shadow-sm',
+    secondary: 'bg-white text-primary border border-gray-200 shadow-sm',
+    outline: 'bg-white text-gray-800 border border-gray-200 shadow-sm',
+    danger: 'bg-error text-white border border-transparent shadow-sm',
   };
 
   const sizeClasses = {
@@ -39,7 +39,7 @@ export default function Button({
       className={cn(
         variantClasses[variant],
         sizeClasses[size],
-        'rounded-md transition-all duration-200 font-medium',
+        'rounded-md font-medium',
         fullWidth && 'w-full',
         (disabled || isLoading) && 'opacity-70 cursor-not-allowed',
         className

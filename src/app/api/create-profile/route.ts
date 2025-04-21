@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
         phone: profile.phone,
         email: profile.email,
         preferred_contact: profile.preferred_contact || 'email',
+        user_type: profile.user_type || 'tenant',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });

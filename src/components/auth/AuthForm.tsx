@@ -7,20 +7,40 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 type AuthMode = 'signin' | 'signup';
+type UserType = 'tenant' | 'agency' | null;
 
-export default function AuthForm() {
-  const [mode, setMode] = useState<AuthMode>('signin');
+interface AuthFormProps {
+  initialMode?: AuthMode;
+  redirect?: string | null;
+}
+
+export default function AuthForm({ initialMode = 'signin', redirect = null }: AuthFormProps) {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [userType, setUserType] = useState<UserType>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   
   const { signIn, signUp, signOut, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get('redirect');
+  const redirectPath = redirect || searchParams.get('redirect');
+
+  // Update mode when initialMode prop changes
+  useEffect(() => {
+    setMode(initialMode);
+    
+    // Check for pre-selected user type from auth-portal page
+    if (mode === 'signup' && typeof window !== 'undefined') {
+      const savedUserType = localStorage.getItem('selectedUserType') as UserType;
+      if (savedUserType) {
+        setUserType(savedUserType);
+      }
+    }
+  }, [initialMode, mode]);
 
   // Redirect user when logged in and redirect parameter exists
   useEffect(() => {
@@ -85,6 +105,11 @@ export default function AuthForm() {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
+    
+    // Clear the selected user type from localStorage if we're in signup mode
+    if (mode === 'signup' && typeof window !== 'undefined') {
+      localStorage.removeItem('selectedUserType');
+    }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -107,11 +132,28 @@ export default function AuthForm() {
       return;
     }
 
+    // Validate user type for signup
+    if (mode === 'signup' && !userType) {
+      setMessage({
+        text: 'Please select whether you are a tenant or property manager',
+        type: 'error'
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       let result;
       
       if (mode === 'signin') {
         result = await signIn(email, password);
+        
+        // If sign-in is successful, redirect to profile
+        if (result.success && result.user) {
+          const redirectTo = redirectPath || '/profile';
+          router.push(redirectTo);
+          return;
+        }
       } else {
         result = await signUp(email, password);
         
@@ -126,7 +168,8 @@ export default function AuthForm() {
               last_name: name.split(' ').slice(1).join(' ') || '',
               phone: phone,
               email: email,
-              preferred_contact: 'email'
+              preferred_contact: 'email',
+              user_type: userType
             };
             
             localStorage.setItem('pendingProfile', JSON.stringify(profileData));
@@ -153,6 +196,7 @@ export default function AuthForm() {
       setPassword('');
       setName('');
       setPhone('');
+      setUserType(null);
       
       // If signed up, switch to sign in mode
       if (mode === 'signup') {
@@ -209,13 +253,22 @@ export default function AuthForm() {
             {message.text}
           </div>
         )}
-        <button 
-          onClick={handleSignOut}
-          disabled={loading}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors w-full"
-        >
-          {loading ? 'Signing out...' : 'Sign Out'}
-        </button>
+        <p className="mb-6">You are now signed in to your account.</p>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => router.push('/profile')}
+            className="w-full bg-primary text-white py-2 px-4 rounded hover:bg-primary/90 transition-colors"
+          >
+            Go to Profile
+          </button>
+          <button 
+            onClick={handleSignOut}
+            className="w-full bg-gray-100 text-gray-800 py-2 px-4 rounded hover:bg-gray-200 transition-colors"
+            disabled={loading}
+          >
+            {loading ? 'Signing out...' : 'Sign Out'}
+          </button>
+        </div>
       </div>
     );
   }
@@ -271,6 +324,36 @@ export default function AuthForm() {
                 className="w-full px-3 py-2 border border-border-light rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 required
               />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block mb-2 text-sm font-medium text-text-primary">
+                I am a:
+              </label>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setUserType('tenant')}
+                  className={`flex-1 py-2 px-4 rounded-md border transition-colors ${
+                    userType === 'tenant'
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-gray-700 border-border-light hover:border-primary'
+                  }`}
+                >
+                  Tenant/Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserType('agency')}
+                  className={`flex-1 py-2 px-4 rounded-md border transition-colors ${
+                    userType === 'agency'
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-gray-700 border-border-light hover:border-primary'
+                  }`}
+                >
+                  Property Manager
+                </button>
+              </div>
             </div>
           </>
         )}
