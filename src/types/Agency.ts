@@ -17,6 +17,15 @@ export interface AgencyListingWithFloorPlans extends AgencyListing {
   floor_plans: FloorPlan[];
 }
 
+export interface AgencyListingWithDetails extends AgencyListing {
+  agency: Agency;
+  floor_plans: FloorPlan[];
+}
+
+export interface AgencyWithDetails extends Agency {
+  agency_listings: AgencyListing[];
+}
+
 export interface AgencyWithListings extends Agency {
   listings: AgencyListingWithFloorPlans[];
 } 

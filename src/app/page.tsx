@@ -104,7 +104,7 @@ export default function Home() {
       <div className="bg-primary/5 border-y border-primary/10 py-4">
         <div className="container mx-auto px-6 max-w-7xl text-center">
           <p className="text-gray-700">
-            <span className="font-medium">PSU Subleases is an aggregator only.</span> We do not process or handle any financial transactions between users.
+            <span className="font-medium">PSU Leases is an aggregator only.</span> We do not process or handle any financial transactions between users.
           </p>
         </div>
       </div>

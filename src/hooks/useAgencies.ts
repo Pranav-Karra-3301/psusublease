@@ -323,7 +323,7 @@ export function useAgencies() {
       const { data, error } = await supabase
         .from('agencies')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('userid', user.id)
         .single();
 
       if (error) {
@@ -346,6 +346,32 @@ export function useAgencies() {
     }
   }, []);
 
+  // Delete an agency listing and its floor plans
+  const deleteAgencyListing = useCallback(async (listingId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Delete floor plans first
+      const { error: floorPlansError } = await supabase
+        .from('floor_plans')
+        .delete()
+        .eq('agency_listing_id', listingId);
+      if (floorPlansError) throw floorPlansError;
+      // Delete the agency listing
+      const { error: listingError } = await supabase
+        .from('agency_listings')
+        .delete()
+        .eq('id', listingId);
+      if (listingError) throw listingError;
+      return { success: true, error: null };
+    } catch (error: any) {
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchAgencies();
   }, [fetchAgencies]);
@@ -362,5 +388,6 @@ export function useAgencies() {
     createAgencyListing,
     updateAgencyListing,
     fetchMyAgency,
+    deleteAgencyListing,
   };
 } 

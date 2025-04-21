@@ -111,6 +111,9 @@ export default function Header() {
                       <Link href="/agency/create-listing" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
                         Create Listing
                       </Link>
+                      <Link href="/agency/profile" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
+                        Edit Agency Profile
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -174,6 +177,9 @@ export default function Header() {
                       </Link>
                       <Link href="/agency/create-listing" className="block py-3 pl-4 border-b border-border-light">
                         Create Listing
+                      </Link>
+                      <Link href="/agency/profile" className="block py-3 pl-4 border-b border-border-light">
+                        Edit Agency Profile
                       </Link>
                     </>
                   ) : (

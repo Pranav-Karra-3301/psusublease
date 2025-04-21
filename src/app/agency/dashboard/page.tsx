@@ -234,12 +234,12 @@ export default function AgencyDashboardPage() {
                         </div>
                         
                         <div className="flex gap-2">
-                          <Link href={`/agency/edit-listing/${listing.id}`}>
+                          <Link href={`/agency-listings/${listing.id}/edit`}>
                             <Button variant="secondary" size="sm">
                               Edit
                             </Button>
                           </Link>
-                          <Link href={`/listings/agency/${listing.id}`}>
+                          <Link href={`/agency-listings/${listing.id}`}>
                             <Button variant="outline" size="sm">
                               View
                             </Button>

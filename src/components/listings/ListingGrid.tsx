@@ -14,6 +14,8 @@ interface Listing {
   bedrooms: number;
   bathrooms: number;
   image?: string;
+  isAgencyListing: boolean;
+  is_facebook_listing: boolean;
 }
 
 interface ListingGridProps {
@@ -66,6 +68,8 @@ export default function ListingGrid({ listings, isLoading = false }: ListingGrid
           bedrooms={listing.bedrooms}
           bathrooms={listing.bathrooms}
           image={listing.image}
+          isAgencyListing={listing.isAgencyListing}
+          isFacebookListing={listing.is_facebook_listing}
         />
       ))}
     </div>

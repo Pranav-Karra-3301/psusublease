@@ -210,6 +210,11 @@ export default function CreateAgencyListingForm() {
       const agency = await fetchMyAgency();
       if (!agency) throw new Error('You must register your agency before creating listings');
 
+      // Get the session token for authentication
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userToken = sessionData?.session?.access_token;
+      if (!userToken) throw new Error('Authentication error: No session token available');
+
       // Validate required fields
       if (!listingData.propertyName || !listingData.address || !listingData.startDate) {
         throw new Error('Please fill in all required fields');
@@ -254,6 +259,7 @@ export default function CreateAgencyListingForm() {
         contact_phone: listingData.contactPhone || null,
         images: propertyImages.length > 0 ? propertyImages : null,
         is_active: true,
+        floor_plan: '', // Add a default empty string for floor_plan
       };
 
       // Process floor plans
@@ -300,9 +306,24 @@ export default function CreateAgencyListingForm() {
         });
       }
 
-      // Create the listing with floor plans
-      const listing = await createAgencyListing(listingToUpload, processedFloorPlans);
-      if (!listing) throw new Error('Failed to create listing');
+      // Use the API route to create the listing
+      const response = await fetch('/api/create-agency-listing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          listingData: listingToUpload,
+          floorPlans: processedFloorPlans,
+          userToken,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to create listing');
+      }
 
       setSuccess(true);
       // Redirect to agency dashboard after a short delay

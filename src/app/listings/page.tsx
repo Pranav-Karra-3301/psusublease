@@ -116,17 +116,25 @@ export default function ListingsPage() {
           // Transform the data to match the ListingCard component's expected format
           const transformedListings = data.map(listing => ({
             id: listing.id,
-            apartment: listing.apartment_id ? 
-              (listing.apartments?.name || 'Unknown Apartment') : 
-              (listing.custom_apartment || 'Custom Apartment'),
-            location: listing.apartments?.address || 'State College, PA',
-            price: listing.offer_price || 0,
+            apartment: listing.is_agency_listing ? 
+              listing.custom_apartment : 
+              (listing.apartment_id ? 
+                (listing.apartments?.name || 'Unknown Apartment') : 
+                (listing.custom_apartment || 'Custom Apartment')),
+            location: listing.is_agency_listing ? 
+              listing.apartments?.address : 
+              (listing.apartments?.address || 'State College, PA'),
+            price: listing.is_agency_listing ? 
+              listing.offer_price : 
+              (listing.offer_price || 0),
             startDate: listing.start_date || '',
             endDate: listing.end_date || '',
             bedrooms: listing.bedrooms || 0,
             bathrooms: listing.bathrooms || 0,
             image: listing.images && listing.images.length > 0 ? 
-              listing.images[0] : '/apt_defaults/default.png'
+              listing.images[0] : '/apt_defaults/default.png',
+            isAgencyListing: !!listing.is_agency_listing,
+            is_facebook_listing: !!listing.is_facebook_listing
           }));
           
           if (isMounted) {

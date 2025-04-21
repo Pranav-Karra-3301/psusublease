@@ -5,7 +5,7 @@ import { Database } from '@/types/database.types';
 // Initialize Supabase with service role for admin privileges
 const supabaseAdmin = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // Make sure to add this to your .env.local
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
     auth: {
       autoRefreshToken: false,
@@ -16,11 +16,11 @@ const supabaseAdmin = createClient<Database>(
 
 export async function POST(request: NextRequest) {
   try {
-    const { agencyData, userToken } = await request.json();
+    const { agencyId, agencyData, userToken } = await request.json();
 
-    if (!agencyData || !userToken) {
+    if (!agencyId || !agencyData || !userToken) {
       return NextResponse.json(
-        { error: 'Missing agency data or user token' },
+        { error: 'Missing required parameters' },
         { status: 400 }
       );
     }
@@ -36,30 +36,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure the agency userid matches the authenticated user
-    if (agencyData.userid !== user.id) {
+    // Verify this user owns the agency
+    const { data: agencyCheck, error: agencyCheckError } = await supabaseAdmin
+      .from('agencies')
+      .select('id')
+      .eq('userid', user.id)
+      .eq('id', agencyId)
+      .single();
+    
+    if (agencyCheckError || !agencyCheck) {
+      console.error('Agency verification error:', agencyCheckError);
       return NextResponse.json(
-        { error: 'Agency userid does not match authenticated user' },
+        { error: 'You do not have permission to update this agency' },
         { status: 403 }
       );
     }
 
-    // Create the agency with admin privileges (bypassing RLS)
+    // Update the agency with admin privileges (bypassing RLS)
     const { data, error } = await supabaseAdmin
       .from('agencies')
-      .insert([{
-        ...agencyData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_verified: false, // Default to not verified
-      }])
+      .update(agencyData)
+      .eq('id', agencyId)
       .select()
       .single();
 
     if (error) {
       console.error('Database error:', error);
       return NextResponse.json(
-        { error: `Error creating agency: ${error.message}` },
+        { error: `Error updating agency: ${error.message}` },
         { status: 500 }
       );
     }

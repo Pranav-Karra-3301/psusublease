@@ -530,7 +530,13 @@ export default function ProfilePage() {
                   </div>
                   
                   <div className="flex space-x-2">
-                    <Link href={`/listings/${listing.id}`} className="flex-1">
+                    <Link href={
+                      listing.is_facebook_listing
+                        ? `/facebook-listings/${listing.id}`
+                        : listing.is_agency_listing
+                          ? `/agency-listings/${listing.id}`
+                          : `/listings/${listing.id}`
+                    } className="flex-1">
                       <Button variant="secondary" fullWidth size="sm">View</Button>
                     </Link>
                     <Link href={`/listings/${listing.id}/edit`} className="flex-1">
