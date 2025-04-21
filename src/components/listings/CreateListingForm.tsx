@@ -415,7 +415,7 @@ export default function CreateListingForm({ initialData, isEditMode = false }: C
             
             // Upload the image to storage
             const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('listing-images')
+              .from('Listing Images')
               .upload(fileName, image);
             
             if (uploadError) {
@@ -425,7 +425,7 @@ export default function CreateListingForm({ initialData, isEditMode = false }: C
             
             // Get the public URL
             const { data: urlData } = await supabase.storage
-              .from('listing-images')
+              .from('Listing Images')
               .getPublicUrl(fileName);
             
             if (urlData && urlData.publicUrl) {

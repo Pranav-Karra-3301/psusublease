@@ -57,6 +57,11 @@ export default function AgencyRegistrationForm() {
       if (userError) throw new Error(userError.message);
       if (!user) throw new Error('You must be signed in to register as an agency');
 
+      // Get the session token for authentication
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userToken = sessionData?.session?.access_token;
+      if (!userToken) throw new Error('Authentication error: No session token available');
+
       // Validate required fields
       if (!formData.name || !formData.email || !formData.phone) {
         throw new Error('Please fill in all required fields');
@@ -87,7 +92,7 @@ export default function AgencyRegistrationForm() {
         logoUrl = publicUrl;
       }
 
-      // Create the agency
+      // Prepare agency data
       const agencyData = {
         user_id: user.id,
         name: formData.name,
@@ -101,8 +106,23 @@ export default function AgencyRegistrationForm() {
         logo_url: logoUrl,
       };
 
-      const agency = await createAgency(agencyData);
-      if (!agency) throw new Error('Failed to create agency');
+      // Use the server API route instead of the client-side function
+      const response = await fetch('/api/create-agency', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agencyData,
+          userToken,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to create agency');
+      }
 
       setSuccess(true);
       // Redirect to agency dashboard after a short delay

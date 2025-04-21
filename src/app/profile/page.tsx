@@ -251,7 +251,7 @@ export default function ProfilePage() {
         const { error: deleteFilesError } = await (supabase as any)
           .rpc('delete_storage_object_by_path', { 
             path_prefix: `${user.id}/`, 
-            bucket_id: 'listing-images' 
+            bucket_id: 'Listing Images' 
           });
           
         if (deleteFilesError) {
