@@ -139,7 +139,7 @@ function ListingPageContent() {
           
           // Fetch owner profile for contact info
           let contactInfo = {
-            email: 'contact@psusublease.com', // Default fallback
+            email: 'pranavkarra001@gmail.com', // Default fallback
             phone: '', 
             preferredContact: 'Email'
           };
@@ -225,6 +225,12 @@ function ListingPageContent() {
   if (!listing) {
     return notFound();
   }
+  
+  const handleContactClick = () => {
+    // Check if we have user email, otherwise use default
+    const contactEmail = listing?.user_email || 
+      'pranavkarra001@gmail.com'; // Default fallback
+  };
   
   return (
     <div className="container mx-auto px-4 py-8">

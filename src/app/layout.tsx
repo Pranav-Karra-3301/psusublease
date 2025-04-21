@@ -14,12 +14,12 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'PSU Leases',
-  description: 'Find and post Penn State leases and subleases',
-  metadataBase: new URL("https://psusublease.vercel.app"),
+  description: 'Find or post leases, subleases, and relets for Penn State students',
+  metadataBase: new URL("https://psuleases.com"),
   openGraph: {
     title: 'PSU Leases',
-    description: 'Find and post Penn State leases and subleases',
-    url: 'https://psusublease.vercel.app',
+    description: 'Find or post leases, subleases, and relets for Penn State students',
+    url: 'https://psuleases.com',
     siteName: 'PSU Leases',
     images: [
       {
@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'PSU Leases',
-    description: 'Find and post Penn State leases and subleases',
+    description: 'Find or post leases, subleases, and relets for Penn State students',
     images: ['/preview_small.png'],
-    site: '@psusublease',
+    site: '@psuleases',
   },
 };
 

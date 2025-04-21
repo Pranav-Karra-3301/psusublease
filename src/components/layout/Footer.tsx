@@ -13,14 +13,14 @@ export default function Footer() {
               <Image 
                 src="/psusubleaseLogo.png" 
                 alt="PSU Leases Logo" 
-                width={30} 
-                height={30} 
-                className="rounded-md"
+                width={120} 
+                height={40} 
+                className="h-8 w-auto"
               />
               <h3 className="text-lg font-semibold text-text-primary">PSU<span className="text-accent">Leases</span></h3>
             </div>
             <p className="text-sm text-text-secondary">
-              Find and post leases and subleases near Penn State University Park campus.
+              Find and post leases, subleases and relets near Penn State University Park campus.
             </p>
           </div>
           
@@ -51,7 +51,7 @@ export default function Footer() {
           <div className="flex flex-col gap-2">
             <h3 className="text-lg font-semibold text-text-primary">Contact</h3>
             <p className="text-sm text-text-secondary">
-              Have questions or feedback? <a href="https://docs.google.com/forms/d/e/1FAIpQLSdxNfKZHEbbgIaRclQjw1eU_2G7ptewmtgnAf1aXAC4CHKAzQ/viewform?usp=dialog" className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">Fill out our contact form</a>
+              Have questions or feedback? Email me at <a href="mailto:pranavkarra001@gmail.com" className="text-accent hover:underline">pranavkarra001@gmail.com</a> or <a href="https://docs.google.com/forms/d/e/1FAIpQLSdxNfKZHEbbgIaRclQjw1eU_2G7ptewmtgnAf1aXAC4CHKAzQ/viewform?usp=dialog" className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">fill out our contact form</a>
             </p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function Footer() {
           <p className="text-xs text-text-secondary leading-relaxed">
             <strong className="text-text-primary">Disclaimer:</strong> PSU Leases is not officially associated with Penn State University. 
             This platform was built by students to help the Penn State community find and list leases and subleases. 
-            This is solely an aggregator of listings - no financial transactions occur on this platform. 
+            This is solely an aggregator of listings - we do not collect any fees or process financial transactions on this platform. 
             Users are responsible for all arrangements and transactions outside of this site. 
             We attempt to verify users but cannot be held responsible for fraudulent listings. 
             Use caution when contacting listers.

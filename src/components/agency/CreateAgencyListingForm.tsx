@@ -344,7 +344,7 @@ export default function CreateAgencyListingForm() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-text-primary mb-4">Listing Created Successfully!</h2>
           <p className="text-text-secondary mb-6">
-            Your property listing has been created and is now live on PSU Leases.
+            Your property listing has been created and is now live on PSU Subleases.
           </p>
           <div className="flex justify-center gap-4">
             <Button onClick={() => router.push('/agency/dashboard')}>

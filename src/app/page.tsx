@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useListings } from '@/hooks/useListings';
 import { useSubleaseRequests } from '@/hooks/useSubleaseRequests';
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
@@ -19,6 +20,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const { getListings } = useListings();
   const { getRequests } = useSubleaseRequests();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,7 +67,7 @@ export default function Home() {
                 Find Your Perfect <br/><span className="text-primary">Lease / Relet</span>
               </h1>
               <p className="text-xl text-gray-700 mb-10 max-w-2xl leading-relaxed">
-                Connect directly with Penn State students to find or post subleases without the middleman.
+                Connect directly with Penn State students and property managers to find or post leases, subleases and relets.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link href="/listings">
@@ -78,11 +80,19 @@ export default function Home() {
                     Post Sublease
                   </Button>
                 </Link>
-                <Link href="/auth-portal">
-                  <Button size="lg" variant="outline" className="py-4 px-8 rounded-md border border-primary bg-white text-primary shadow-sm">
-                    Sign In / Sign Up
-                  </Button>
-                </Link>
+                {!user ? (
+                  <Link href="/auth-portal">
+                    <Button size="lg" variant="outline" className="py-4 px-8 rounded-md border border-primary bg-white text-primary shadow-sm">
+                      Sign In / Sign Up
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/profile">
+                    <Button size="lg" variant="outline" className="py-4 px-8 rounded-md border border-primary bg-white text-primary shadow-sm">
+                      My Profile
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
             {/* Right: Preview Image */}
@@ -104,7 +114,7 @@ export default function Home() {
       <div className="bg-primary/5 border-y border-primary/10 py-4">
         <div className="container mx-auto px-6 max-w-7xl text-center">
           <p className="text-gray-700">
-            <span className="font-medium">PSU Leases is an aggregator only.</span> We do not process or handle any financial transactions between users.
+            <span className="font-medium">PSU Leases is an aggregator only.</span> We do not collect any fees or handle any financial transactions between users.
           </p>
         </div>
       </div>
@@ -154,9 +164,9 @@ export default function Home() {
       <section className="py-24 bg-bg-secondary border-t border-border-light">
         <div className="container mx-auto px-6 max-w-7xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-semibold mb-4">How PSU Subleases Works</h2>
+            <h2 className="text-3xl font-semibold mb-4">How PSU Leases Works</h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Our platform connects Penn State students looking for housing with those who have spaces to sublease.
+              Our platform connects Penn State students and property managers offering housing with those looking for spaces to lease, sublease or relet.
             </p>
           </div>
           
@@ -168,7 +178,7 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-medium mb-3">Create a Listing</h3>
-              <p className="text-gray-600">Post your apartment or room for sublease with photos and details.</p>
+              <p className="text-gray-600">Post your apartment or room for lease, sublease, or relet with photos and details.</p>
             </div>
             
             <div className="text-center">
@@ -188,7 +198,7 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-medium mb-3">Connect Directly</h3>
-              <p className="text-gray-600">Message potential subleasers or tenants to arrange viewings and negotiate terms.</p>
+              <p className="text-gray-600">Message potential landlords, subleasers, or tenants to arrange viewings and negotiate terms.</p>
             </div>
           </div>
         </div>
@@ -349,7 +359,7 @@ export default function Home() {
       <section className="py-24 bg-white border-t border-border-light">
         <div className="container mx-auto px-6 max-w-7xl">
           <h2 className="text-3xl font-semibold text-center text-gray-900 mb-16">
-            Benefits of PSU Subleases
+            Benefits of PSU Leases
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -360,8 +370,8 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-medium text-gray-900 mb-3">No Middleman Fees</h3>
-                <p className="text-gray-600">We don't process payments or charge fees — connect directly with other students.</p>
+                <h3 className="text-xl font-medium text-gray-900 mb-3">No Fees</h3>
+                <p className="text-gray-600">We don't collect fees or process payments — connect directly with students and property managers.</p>
               </div>
             </AnimatedContainer>
             
@@ -373,7 +383,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-3">Penn State Community</h3>
-                <p className="text-gray-600">Platform exclusively for Penn State students, ensuring safe and reliable connections.</p>
+                <p className="text-gray-600">Platform exclusively for Penn State students and local property managers, ensuring reliable connections.</p>
               </div>
             </AnimatedContainer>
             
@@ -393,41 +403,51 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-primary text-white">
+      <section className="py-20">
         <div className="container mx-auto px-6 text-center max-w-4xl">
-          <div className="flex items-center justify-center mb-8">
-            <Image 
-              src="/lion.png" 
-              alt="Penn State Lion" 
-              width={60} 
-              height={60}
-              className="mr-4"
-            />
-            <h2 className="text-3xl font-bold">Join the PSU Subleases Community</h2>
-          </div>
-          
-          <p className="text-lg text-white/80 mb-4 max-w-2xl mx-auto">
-            Whether you're looking for a sublease or have a space to offer, connect with fellow Penn State students today.
-          </p>
-          <p className="text-sm text-white/60 mb-10 max-w-2xl mx-auto">
-            Remember: PSU Subleases is an aggregator platform that does not handle any financial transactions between users.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/listings">
-              <Button size="lg" className="py-4 px-8 rounded-md bg-white text-primary border-none">
-                Browse Listings
-              </Button>
-            </Link>
-            <Link href="/requests">
-              <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-transparent border-2 border-white hover:bg-white/10 text-white">
-                View Requests
-              </Button>
-            </Link>
-            <Link href="/auth-portal">
-              <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-primary/20 border-2 border-white text-white">
-                Sign In / Sign Up
-              </Button>
-            </Link>
+          <div className="bg-primary rounded-xl py-16 px-8">
+            <div className="flex items-center justify-center mb-8">
+              <Image 
+                src="/lion.png" 
+                alt="Penn State Lion" 
+                width={60} 
+                height={60}
+                className="mr-4"
+              />
+              <h2 className="text-3xl font-bold text-white">Join the PSU Leases Community</h2>
+            </div>
+            
+            <p className="text-lg text-white mb-4 max-w-2xl mx-auto">
+              Whether you're looking for a lease/sublease or have a space to offer, connect with fellow Penn State students and property managers today.
+            </p>
+            <p className="text-base text-white/80 mb-10 max-w-2xl mx-auto">
+              Remember: PSU Leases is an aggregator platform that does not collect any fees or handle financial transactions between users.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link href="/listings">
+                <Button size="lg" className="py-4 px-8 rounded-md bg-white text-primary border-none">
+                  Browse Listings
+                </Button>
+              </Link>
+              <Link href="/requests">
+                <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-transparent border-2 border-white hover:bg-white/10 text-white">
+                  View Requests
+                </Button>
+              </Link>
+              {!user ? (
+                <Link href="/auth-portal">
+                  <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-primary/20 border-2 border-white text-white">
+                    Sign In / Sign Up
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/profile">
+                  <Button size="lg" variant="outline" className="py-4 px-8 rounded-md bg-primary/20 border-2 border-white text-white">
+                    My Profile
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </section>

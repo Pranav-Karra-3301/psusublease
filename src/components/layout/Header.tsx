@@ -51,20 +51,16 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center space-x-2">
           <Image 
-            src="/oldmain.png" 
+            src="/psusubleaseLogo.png" 
+            width={30} 
+            height={30} 
             alt="PSU Leases Logo" 
-            width={40} 
-            height={40} 
-            className="rounded-md"
+            className="rounded-md md:mr-2"
           />
-          <Image
-            src="/header-title.png"
-            alt="PSU Leases"
-            width={140}
-            height={32}
-            className="ml-2"
-            priority
-          />
+          <span className="sr-only md:not-sr-only text-lg font-semibold">
+            <span className="text-black">PSU</span>
+            <span className="text">Leases</span>
+          </span>
         </Link>
         
         {/* Mobile menu button */}

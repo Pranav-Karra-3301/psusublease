@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/database.types';
+import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -18,7 +19,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    storageKey: 'psusublease-auth',
+    storageKey: 'psuleases-auth',
     detectSessionInUrl: true,
   },
   realtime: {
@@ -36,4 +37,22 @@ if (process.env.NODE_ENV !== 'production') {
   console.log('Supabase client initialized with URL:', supabaseUrl);
 }
 
-export default supabase; 
+export default supabase;
+
+// Create client using the new @supabase/ssr package
+export const createClientComponent = () => {
+  const supabase = createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        storageKey: 'psuleases-auth',
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      }
+    }
+  );
+
+  return supabase;
+}; 

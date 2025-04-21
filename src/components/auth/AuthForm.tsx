@@ -147,6 +147,13 @@ export default function AuthForm({ initialMode = 'signin', redirect = null }: Au
       
       if (mode === 'signin') {
         result = await signIn(email, password);
+        
+        // If sign-in is successful, redirect to profile
+        if (result.success && result.user) {
+          const redirectTo = redirectPath || '/profile';
+          router.push(redirectTo);
+          return;
+        }
       } else {
         result = await signUp(email, password);
         
@@ -246,13 +253,22 @@ export default function AuthForm({ initialMode = 'signin', redirect = null }: Au
             {message.text}
           </div>
         )}
-        <button 
-          onClick={handleSignOut}
-          disabled={loading}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors w-full"
-        >
-          {loading ? 'Signing out...' : 'Sign Out'}
-        </button>
+        <p className="mb-6">You are now signed in to your account.</p>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => router.push('/profile')}
+            className="w-full bg-primary text-white py-2 px-4 rounded hover:bg-primary/90 transition-colors"
+          >
+            Go to Profile
+          </button>
+          <button 
+            onClick={handleSignOut}
+            className="w-full bg-gray-100 text-gray-800 py-2 px-4 rounded hover:bg-gray-200 transition-colors"
+            disabled={loading}
+          >
+            {loading ? 'Signing out...' : 'Sign Out'}
+          </button>
+        </div>
       </div>
     );
   }
