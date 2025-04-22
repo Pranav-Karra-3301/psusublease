@@ -19,9 +19,15 @@ type StatsType = {
 
 type User = {
   id: string;
-  email: string;
+  email: string | null;
   created_at: string;
   is_verified?: boolean;
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
+  preferred_contact?: string | null;
+  updated_at?: string;
+  user_type?: string | null;
 };
 
 type Agency = {
@@ -49,6 +55,20 @@ type Request = {
   is_verified: boolean;
 };
 
+type FloorPlan = {
+  images?: string[];
+};
+
+type AgencyListing = {
+  id: string;
+  images?: string[];
+};
+
+type FacebookListing = {
+  id: string;
+  images?: string[];
+};
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -74,20 +94,21 @@ export default function AdminDashboardPage() {
     const checkAdmin = async () => {
       try {
         setLoading(true);
-        
+
         // Get the current user
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           router.push('/sign-in');
           return;
         }
-        
-        // Check if user is admin (only pranavkarra001@gmail.com is admin)
-        if (user.email !== 'pranavkarra001@gmail.com') {
+
+        // Check if user is admin (only pranavkarra001@gmail.com and machinelearningpennstate@gmail.com are admins)
+        const adminEmails = ['pranavkarra001@gmail.com', 'machinelearningpennstate@gmail.com'];
+        // Use user.email ?? '' to ensure a string is always passed
+        if (!adminEmails.includes(user.email ?? '')) {
           router.push('/');
           return;
         }
-        
         setIsAdmin(true);
         fetchDashboardData();
       } catch (error) {
@@ -95,12 +116,13 @@ export default function AdminDashboardPage() {
         router.push('/');
       }
     };
-    
+
     checkAdmin();
   }, [router]);
 
   const fetchDashboardData = async () => {
     try {
+      // Use any type to bypass TypeScript errors with database schema
       const [
         { data: userData, error: userError },
         { data: listingData, error: listingError },
@@ -109,12 +131,12 @@ export default function AdminDashboardPage() {
         { data: agencyData, error: agencyError },
         { data: facebookListingData, error: facebookListingError }
       ] = await Promise.all([
-        supabase.from('profiles').select('*'),
-        supabase.from('listings').select('*'),
-        supabase.from('agency_listings').select('*, agencies(*)'),
-        supabase.from('sublease_requests').select('*'),
-        supabase.from('agencies').select('*'),
-        supabase.from('facebook_listings').select('*')
+        supabase.from('profiles').select('*') as any,
+        supabase.from('listings').select('*') as any,
+        supabase.from('agency_listings').select('*, agencies(*)') as any,
+        supabase.from('sublease_requests').select('*') as any,
+        supabase.from('agencies').select('*') as any,
+        supabase.from('facebook_listings').select('*') as any
       ]);
 
       if (userError) throw userError;
@@ -178,7 +200,7 @@ export default function AdminDashboardPage() {
       const { error } = await supabase
         .from('sublease_requests')
         .update({ is_verified: true })
-        .eq('id', requestId);
+        .eq('id', requestId) as any;
 
       if (error) throw error;
       
@@ -244,7 +266,7 @@ export default function AdminDashboardPage() {
           .from('listings')
           .select('images')
           .eq('id', id)
-          .single();
+          .single() as any;
         
         if (listing?.images) {
           for (const image of listing.images) {
@@ -259,7 +281,7 @@ export default function AdminDashboardPage() {
         const { error } = await supabase
           .from('listings')
           .delete()
-          .eq('id', id);
+          .eq('id', id) as any;
           
         if (error) throw error;
         
@@ -269,11 +291,11 @@ export default function AdminDashboardPage() {
         const { data: floorPlans } = await supabase
           .from('floor_plans')
           .select('images')
-          .eq('agency_listing_id', id);
+          .eq('agency_listing_id', id) as any;
         
         // Delete floor plan images from storage
         if (floorPlans) {
-          for (const plan of floorPlans) {
+          for (const plan of floorPlans as FloorPlan[]) {
             if (plan.images) {
               for (const image of plan.images) {
                 const { error: storageError } = await supabase.storage
@@ -289,7 +311,7 @@ export default function AdminDashboardPage() {
         const { error: floorPlansError } = await supabase
           .from('floor_plans')
           .delete()
-          .eq('agency_listing_id', id);
+          .eq('agency_listing_id', id) as any;
         
         if (floorPlansError) throw floorPlansError;
         
@@ -298,10 +320,10 @@ export default function AdminDashboardPage() {
           .from('agency_listings')
           .select('images')
           .eq('id', id)
-          .single();
+          .single() as any;
         
         if (agencyListing?.images) {
-          for (const image of agencyListing.images) {
+          for (const image of (agencyListing as AgencyListing).images || []) {
             const { error: storageError } = await supabase.storage
               .from('listing-images')
               .remove([image]);
@@ -313,7 +335,7 @@ export default function AdminDashboardPage() {
         const { error } = await supabase
           .from('agency_listings')
           .delete()
-          .eq('id', id);
+          .eq('id', id) as any;
           
         if (error) throw error;
         
@@ -324,10 +346,10 @@ export default function AdminDashboardPage() {
           .from('facebook_listings')
           .select('images')
           .eq('id', id)
-          .single();
+          .single() as any;
         
         if (fbListing?.images) {
-          for (const image of fbListing.images) {
+          for (const image of (fbListing as FacebookListing).images || []) {
             const { error: storageError } = await supabase.storage
               .from('listing-images')
               .remove([image]);
@@ -339,7 +361,7 @@ export default function AdminDashboardPage() {
         const { error } = await supabase
           .from('facebook_listings')
           .delete()
-          .eq('id', id);
+          .eq('id', id) as any;
           
         if (error) throw error;
         
@@ -500,7 +522,7 @@ export default function AdminDashboardPage() {
                   {users.map((user) => (
                     <tr key={user.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
-                        {user.email}
+                        {user.email || 'No email'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {formatDate(user.created_at)}
@@ -650,7 +672,7 @@ export default function AdminDashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Button 
                           size="sm" 
-                          variant="error"
+                          variant="danger"
                           onClick={() => deleteListing(listing.id, 'regular')}
                         >
                           Delete
@@ -680,7 +702,7 @@ export default function AdminDashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Button 
                           size="sm" 
-                          variant="error"
+                          variant="danger"
                           onClick={() => deleteListing(listing.id, 'agency')}
                         >
                           Delete
@@ -702,7 +724,13 @@ export default function AdminDashboardPage() {
                         {listing.author_username || 'Anonymous'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
-                        Facebook
+                        {listing.display_price ? 
+                          (listing.display_price === 'Contact for price' ? 
+                            listing.display_price : 
+                            `$${listing.display_price}`) : 
+                          (listing.offer_price ? 
+                            `$${listing.offer_price}` : 
+                            'Contact for price')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {formatDate(listing.created_at)}
@@ -710,7 +738,7 @@ export default function AdminDashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Button 
                           size="sm" 
-                          variant="error"
+                          variant="danger"
                           onClick={() => deleteListing(listing.id, 'facebook')}
                         >
                           Delete
@@ -834,9 +862,13 @@ export default function AdminDashboardPage() {
                           {listing.author_username || 'Anonymous'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
-                          ${listing.offer_price || 
-                            (listing.parsed_listing_data && listing.parsed_listing_data.price) || 
-                            'N/A'}
+                          {listing.display_price ? 
+                            (listing.display_price === 'Contact for price' ? 
+                              listing.display_price : 
+                              `$${listing.display_price}`) : 
+                            (listing.offer_price ? 
+                              `$${listing.offer_price}` : 
+                              'Contact for price')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                           {formatDate(listing.created_at)}

@@ -53,7 +53,7 @@ export function useAuth() {
       // Use the current origin for the redirect URL
       const redirectTo = typeof window !== 'undefined' 
         ? `${window.location.origin}/auth?mode=signin` 
-        : '/auth?mode=signin';
+        : undefined;
         
       const { error, data } = await supabase.auth.signUp({ 
         email, 

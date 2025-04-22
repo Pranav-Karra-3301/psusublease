@@ -9,28 +9,31 @@ async function extractInfoWithOpenAI({ postText, ocrTexts, links, authorName }: 
   const prompt = `Extract all relevant sublease listing information from the following Facebook post and OCR text. Return a JSON object with ONLY these fields:
 - apartment_name (required): Name of the apartment complex or building (e.g. "The Rise", "The Metropolitan")
 - address (if available): Full address of the property
-- price (required): Monthly rental price in numbers only (e.g. 750, not "$750/month"). If price includes "+ utilities", just extract the base price number.
-- start_date (required): The earliest date the sublease is available (in format "YYYY-MM-DD" if possible)
-- end_date (required): The last date the sublease is available (in format "YYYY-MM-DD" if possible)
+- price (if available): Monthly rental price in numbers only (e.g. 750, not "$750/month"). If price includes "+ utilities", just extract the base price number. If no price is specified, leave blank.
+- start_date (if available): The earliest date the sublease is available (in format "YYYY-MM-DD" if possible)
+- end_date (if available): The last date the sublease is available (in format "YYYY-MM-DD" if possible)
 - bedrooms (if available): Number of bedrooms as a number
 - bathrooms (if available): Number of bathrooms as a number
 - description (required): A detailed summary combining important information from the post, including special requirements
-- amenities (if available): Array of amenities mentioned (e.g. ["Washer/Dryer", "Fully Furnished"])
+- amenities (if available): Array of amenities mentioned (e.g. ["Washer/Dryer", "Fully Furnished", "Gym", "Pool"])
 - author_username (if available): Name of the person posting
 - special_requirements (if available): Any specific requirements for roommates or living conditions
 
 IMPORTANT INSTRUCTIONS:
 - Look especially for patterns like "$X + utilities", "X-bedroom apartment with Y bathroom", "Month DD till Month DD"
 - For each field marked "required", you MUST provide a value - do not leave these blank or as null
-- If exact dates aren't provided, convert text descriptions like "Summer 2023" to date ranges (e.g. "2023-05-01" to "2023-08-31")
+- For price and dates, if not provided, leave these fields empty or null - do NOT invent or guess values
 - Convert price ranges to the lower value (e.g. "$750-800" should be 750)
 - If the apartment_name isn't clearly stated, try to identify it from context clues or address
 - If something is unclear, make your best guess rather than leaving it blank
 - If price is listed with utilities, extract just the base rent
 - Look for special requirements (e.g. "female roommates only", "pure vegetarian", "no pets") and include in both description and special_requirements field
 - Include all relevant contact information in the description field
+- ALWAYS extract ALL amenities mentioned in the text (e.g., "clubhouse", "pool", "gym", "free bus pass", etc.) and include them in the amenities array
 
 When extracting dates:
+- If you see mentions of academic years like "2025-2026", "25-26 school year", "25/26 year", "academic year", "next academic year", or similar, convert these to standard lease dates of August 1 of the first year to July 31 of the second year (e.g., "2025-2026" or "25/26 year" becomes "2025-08-01" to "2026-07-31")
+- For years expressed in shorthand like "25/26" or "25-26", interpret as 2025-2026
 - Convert text like "May-August" to YYYY-MM-DD format (use current year unless specified)
 - For "May 01 till July 31" format, use current year if not specified
 - For Fall/Spring semester references, use standard academic dates (Fall: Aug-Dec, Spring: Jan-May)
@@ -57,7 +60,7 @@ ${JSON.stringify(links)}`;
         { role: 'system', content: 'You are a specialized data extraction assistant for Penn State University sublease listings. Your task is to extract precise, structured information from Facebook posts and images. Make your best inference for required fields, even if the information is not explicitly stated.' },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.1, // Lower temperature for more deterministic results
+      temperature: 0.3, // Lower temperature for more deterministic results
     }),
   });
   const data = await response.json();
@@ -101,41 +104,84 @@ ${JSON.stringify(links)}`;
   
   // 4. Dates fallback - improved patterns
   if (!parsed.start_date || !parsed.end_date || parsed.start_date === 'N/A' || parsed.end_date === 'N/A') {
-    // Handle "Month DD till Month DD" pattern without year
-    const simpleDateRangeMatch = allText.match(/([A-Za-z]+)\s+(\d{1,2})\s+till\s+([A-Za-z]+)\s+(\d{1,2})/i);
-    if (simpleDateRangeMatch) {
-      const currentYear = new Date().getFullYear();
-      const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    // Handle academic year patterns first
+    const academicYearPattern1 = allText.match(/(\d{4})\s*[-\/]\s*(\d{4})/);
+    const academicYearPattern2 = allText.match(/(\d{2})\s*[-\/]\s*(\d{2})(?:\s*school\s*year|\s*academic\s*year|\s*year)/i);
+    const academicYearPattern3 = /academic\s*year|school\s*year/i.test(allText);
+    
+    if (academicYearPattern1) {
+      // Handle full year format like "2025-2026" or "2025/2026"
+      const startYear = parseInt(academicYearPattern1[1]);
+      const endYear = parseInt(academicYearPattern1[2]);
+      parsed.start_date = `${startYear}-08-01`;
+      parsed.end_date = `${endYear}-07-31`;
+    } else if (academicYearPattern2) {
+      // Handle shortened year format like "25-26 school year" or "25/26 year"
+      let startYear = parseInt(academicYearPattern2[1]);
+      let endYear = parseInt(academicYearPattern2[2]);
       
-      const startMonth = months.findIndex(m => m.toLowerCase().startsWith(simpleDateRangeMatch[1].toLowerCase()));
-      const startDay = parseInt(simpleDateRangeMatch[2]);
-      const endMonth = months.findIndex(m => m.toLowerCase().startsWith(simpleDateRangeMatch[3].toLowerCase()));
-      const endDay = parseInt(simpleDateRangeMatch[4]);
+      // Convert 2-digit years to 4-digit years
+      if (startYear < 100) {
+        // Assume years are in the 2000s
+        startYear = startYear < 50 ? 2000 + startYear : 1900 + startYear;
+        endYear = endYear < 50 ? 2000 + endYear : 1900 + endYear;
+      }
       
-      if (startMonth !== -1 && endMonth !== -1) {
-        parsed.start_date = `${currentYear}-${String(startMonth + 1).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
-        parsed.end_date = `${currentYear}-${String(endMonth + 1).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
+      parsed.start_date = `${startYear}-08-01`;
+      parsed.end_date = `${endYear}-07-31`;
+    } else if (academicYearPattern3) {
+      // If it just mentions "academic year" or "school year" without specifying which one,
+      // use the next academic year if we're past January
+      const now = new Date();
+      const thisYear = now.getFullYear();
+      const nextYear = thisYear + 1;
+      
+      // If we're in second half of the year, assume it's for next academic year
+      if (now.getMonth() >= 6) { // July or later
+        parsed.start_date = `${thisYear}-08-01`;
+        parsed.end_date = `${nextYear}-07-31`;
+      } else {
+        const prevYear = thisYear - 1;
+        parsed.start_date = `${prevYear}-08-01`;
+        parsed.end_date = `${thisYear}-07-31`;
       }
     } else {
-      // Try standard date formats
-      // Format: Month DD, YYYY - Month DD, YYYY
-      const dateRange = allText.match(/(\w+ \d{1,2},? \d{4}) ?[–-] ?(\w+ \d{1,2},? \d{4})/i);
-      if (dateRange) {
-        parsed.start_date = new Date(dateRange[1]).toISOString().split('T')[0];
-        parsed.end_date = new Date(dateRange[2]).toISOString().split('T')[0];
+      // Handle "Month DD till Month DD" pattern without year
+      const simpleDateRangeMatch = allText.match(/([A-Za-z]+)\s+(\d{1,2})\s+till\s+([A-Za-z]+)\s+(\d{1,2})/i);
+      if (simpleDateRangeMatch) {
+        const currentYear = new Date().getFullYear();
+        const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+        
+        const startMonth = months.findIndex(m => m.toLowerCase().startsWith(simpleDateRangeMatch[1].toLowerCase()));
+        const startDay = parseInt(simpleDateRangeMatch[2]);
+        const endMonth = months.findIndex(m => m.toLowerCase().startsWith(simpleDateRangeMatch[3].toLowerCase()));
+        const endDay = parseInt(simpleDateRangeMatch[4]);
+        
+        if (startMonth !== -1 && endMonth !== -1) {
+          parsed.start_date = `${currentYear}-${String(startMonth + 1).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
+          parsed.end_date = `${currentYear}-${String(endMonth + 1).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
+        }
       } else {
-        // Format: Month - Month
-        const monthRange = allText.match(/(\w+) ?[–-] ?(\w+)/i);
-        if (monthRange) {
-          const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-          const startMonth = months.findIndex(m => m.toLowerCase().startsWith(monthRange[1].toLowerCase()));
-          const endMonth = months.findIndex(m => m.toLowerCase().startsWith(monthRange[2].toLowerCase()));
-          if (startMonth !== -1 && endMonth !== -1) {
-            const currentYear = new Date().getFullYear();
-            parsed.start_date = `${currentYear}-${String(startMonth + 1).padStart(2, '0')}-01`;
-            // Last day of end month
-            const lastDay = new Date(currentYear, endMonth + 1, 0).getDate();
-            parsed.end_date = `${currentYear}-${String(endMonth + 1).padStart(2, '0')}-${lastDay}`;
+        // Try standard date formats
+        // Format: Month DD, YYYY - Month DD, YYYY
+        const dateRange = allText.match(/(\w+ \d{1,2},? \d{4}) ?[–-] ?(\w+ \d{1,2},? \d{4})/i);
+        if (dateRange) {
+          parsed.start_date = new Date(dateRange[1]).toISOString().split('T')[0];
+          parsed.end_date = new Date(dateRange[2]).toISOString().split('T')[0];
+        } else {
+          // Format: Month - Month
+          const monthRange = allText.match(/(\w+) ?[–-] ?(\w+)/i);
+          if (monthRange) {
+            const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+            const startMonth = months.findIndex(m => m.toLowerCase().startsWith(monthRange[1].toLowerCase()));
+            const endMonth = months.findIndex(m => m.toLowerCase().startsWith(monthRange[2].toLowerCase()));
+            if (startMonth !== -1 && endMonth !== -1) {
+              const currentYear = new Date().getFullYear();
+              parsed.start_date = `${currentYear}-${String(startMonth + 1).padStart(2, '0')}-01`;
+              // Last day of end month
+              const lastDay = new Date(currentYear, endMonth + 1, 0).getDate();
+              parsed.end_date = `${currentYear}-${String(endMonth + 1).padStart(2, '0')}-${lastDay}`;
+            }
           }
         }
       }
@@ -199,7 +245,44 @@ ${JSON.stringify(links)}`;
     }
   }
   
-  // 7. Apartment Name fallback
+  // 7. Ensure amenities is an array and add common amenities if mentioned but not extracted
+  if (!parsed.amenities || !Array.isArray(parsed.amenities)) {
+    parsed.amenities = [];
+  }
+  
+  // Look for common amenities in the text that might have been missed
+  const commonAmenities = {
+    'clubhouse': ['club house', 'clubhouse', 'common area', 'community center'],
+    'pool': ['pool', 'swimming'],
+    'gym': ['gym', 'fitness center', 'workout'],
+    'bus pass': ['bus pass', 'cata', 'bus route', 'transportation'],
+    'laundry': ['washer', 'dryer', 'laundry', 'w/d'],
+    'furnished': ['furnished', 'furniture'],
+    'parking': ['parking', 'garage', 'spot', 'space'],
+    'utilities included': ['utilities included', 'utilities paid', 'all utilities'],
+    'wifi': ['wifi', 'internet', 'high-speed'],
+    'cable': ['cable', 'tv'],
+    'balcony': ['balcony', 'patio', 'terrace'],
+    'dishwasher': ['dishwasher'],
+    'pet friendly': ['pet friendly', 'pets allowed', 'dog', 'cat'],
+    'air conditioning': ['a/c', 'air conditioning', 'central air'],
+    'security': ['security', 'gated', 'surveillance']
+  };
+  
+  // Check for each amenity
+  for (const [amenity, keywords] of Object.entries(commonAmenities)) {
+    // Skip if this amenity is already included
+    if (parsed.amenities.some(a => a.toLowerCase().includes(amenity.toLowerCase()))) {
+      continue;
+    }
+    
+    // Check if any keyword is in the text
+    if (keywords.some(keyword => allText.toLowerCase().includes(keyword.toLowerCase()))) {
+      parsed.amenities.push(amenity.charAt(0).toUpperCase() + amenity.slice(1));
+    }
+  }
+  
+  // 8. Apartment Name fallback
   if (!parsed.apartment_name || parsed.apartment_name === 'N/A') {
     const commonApts = [
       'The Rise', 'The Station', 'The Metropolitan', 'The Legacy', 'University Gateway', 

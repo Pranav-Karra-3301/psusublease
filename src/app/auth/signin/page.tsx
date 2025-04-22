@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import AuthForm from '@/components/auth/AuthForm';
 
 // Client component that uses useSearchParams
 function SignInContent() {
@@ -11,10 +12,17 @@ function SignInContent() {
   const redirect = searchParams.get('redirect');
 
   useEffect(() => {
-    // Redirect to the auth page with signin mode and preserve any redirect parameter
-    const redirectParam = redirect ? `&redirect=${redirect}` : '';
-    router.replace(`/auth?mode=signin${redirectParam}`);
+    // Only redirect if we came here directly
+    // If we already have a redirect parameter, we're coming from middleware
+    if (!redirect) {
+      router.replace('/auth?mode=signin');
+    }
   }, [router, redirect]);
+
+  // If we have a redirect parameter, show the AuthForm directly
+  if (redirect) {
+    return <AuthForm initialMode="signin" redirect={redirect} />;
+  }
 
   return (
     <div className="text-center">

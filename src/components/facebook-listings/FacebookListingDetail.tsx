@@ -21,12 +21,24 @@ export default function FacebookListingDetail({ listing }: { listing: any }) {
           <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <div className="mb-2 text-text-secondary text-sm">Price</div>
-              <div className="text-xl font-bold text-accent">${listing.offer_price || 'N/A'}</div>
+              <div className="text-xl font-bold text-accent">
+                {listing.display_price ? 
+                  (listing.display_price === 'Contact for price' ? 
+                    listing.display_price : 
+                    `$${listing.display_price}`) : 
+                  (listing.offer_price ? 
+                    `$${listing.offer_price}` : 
+                    'Contact for price')}
+              </div>
             </div>
             <div>
               <div className="mb-2 text-text-secondary text-sm">Lease Dates</div>
               <div className="text-text-primary font-medium">
-                {listing.start_date ? new Date(listing.start_date).toLocaleDateString() : 'N/A'} - {listing.end_date ? new Date(listing.end_date).toLocaleDateString() : 'N/A'}
+                {listing.display_dates ? 
+                  listing.display_dates : 
+                  (listing.start_date && listing.end_date ? 
+                    `${new Date(listing.start_date).toLocaleDateString()} - ${new Date(listing.end_date).toLocaleDateString()}` : 
+                    'Contact for dates')}
               </div>
             </div>
           </div>

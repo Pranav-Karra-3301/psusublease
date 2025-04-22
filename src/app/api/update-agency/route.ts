@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Database error:', error);
       return NextResponse.json(
-        { error: `Error updating agency: ${error.message}` },
+        { error: `Error updating agency: ${error.message}`, details: error },
         { status: 500 }
       );
     }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Server error:', error);
     return NextResponse.json(
-      { error: `Server error: ${error.message}` },
+      { error: `Server error: ${error.message}`, details: error.toString() },
       { status: 500 }
     );
   }

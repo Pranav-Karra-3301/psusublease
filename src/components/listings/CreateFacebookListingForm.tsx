@@ -116,6 +116,10 @@ export default function CreateFacebookListingForm() {
     setError(null);
     
     try {
+      // Log what we're analyzing
+      console.log("Analyzing text:", postText);
+      console.log("Analyzing images:", analyzeImages.length);
+      
       const formData = new FormData();
       formData.append('postText', postText);
       formData.append('facebookPostLink', facebookPostLink);
@@ -132,23 +136,152 @@ export default function CreateFacebookListingForm() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to analyze Facebook listing');
       
+      // Log what we received from the API
+      console.log("API response:", result);
+      console.log("Extracted data:", result.parsed_listing_data);
+      
       setExtractedInfo(result.parsed_listing_data);
       setOcrTexts(result.ocrTexts || []);
       setExtractedPostText(result.postText || '');
       setShowExtractedInfo(true);
 
+      // === TEST INSTRUCTIONS FOR ADMIN ===
+      // Test string for academic year dates and amenities:
+      // "Looking for someone to take my lease at The Heights. It is a private bedroom at a 2BR/2BTH for the 25/26 year for $1180.
+      // You will only be sharing the common areas with another person.
+      // There is a clubhouse, pool, gym, and free Cata bus pass. Please DM me if you are interested or have someone who is."
+      // Expected behavior:
+      // - Should set dates to Aug 1, 2025 - Jul 31, 2026
+      // - Should select the Pool, Gym Access, Bus Route amenities
+      // === END TEST INSTRUCTIONS ===
+
       // Fill the form fields with the extracted data
       if (result.parsed_listing_data) {
         const data = result.parsed_listing_data;
+        
+        // Process apartment name
         setApartmentName(data.apartment_name || '');
+        
+        // Process address
         setAddress(data.address || '');
+        
+        // Process price
         setPrice(data.price ? data.price.toString() : '');
-        setStartDate(data.start_date || '');
-        setEndDate(data.end_date || '');
+        
+        // Process dates - ensure they're in the correct HTML date input format (YYYY-MM-DD)
+        if (data.start_date) {
+          // Check if the date is in the correct format (YYYY-MM-DD)
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(data.start_date)) {
+            setStartDate(data.start_date);
+          } else {
+            // Try to parse the date
+            try {
+              const parsedDate = new Date(data.start_date);
+              if (!isNaN(parsedDate.getTime())) {
+                setStartDate(parsedDate.toISOString().split('T')[0]);
+              }
+            } catch (e) {
+              console.error('Failed to parse start date:', data.start_date);
+            }
+          }
+        }
+        
+        if (data.end_date) {
+          // Check if the date is in the correct format (YYYY-MM-DD)
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(data.end_date)) {
+            setEndDate(data.end_date);
+          } else {
+            // Try to parse the date
+            try {
+              const parsedDate = new Date(data.end_date);
+              if (!isNaN(parsedDate.getTime())) {
+                setEndDate(parsedDate.toISOString().split('T')[0]);
+              }
+            } catch (e) {
+              console.error('Failed to parse end date:', data.end_date);
+            }
+          }
+        }
+        
+        // Process bedroom/bathroom counts
         setBedrooms(data.bedrooms ? data.bedrooms.toString() : '');
         setBathrooms(data.bathrooms ? data.bathrooms.toString() : '');
+        
+        // Process description
         setDescription(data.description || '');
-        setAmenities(data.amenities || []);
+        
+        // Process amenities - map extracted amenities to the common amenities in the form
+        if (data.amenities && Array.isArray(data.amenities)) {
+          // Create a map of common amenity variations to standardized names
+          // Make sure these match EXACTLY with the case in commonAmenities array
+          const amenityMappings = {
+            // Standard amenities that match form options exactly
+            'in-unit washer/dryer': 'In-unit Washer/Dryer',
+            'washer/dryer': 'In-unit Washer/Dryer',
+            'laundry': 'In-unit Washer/Dryer',
+            'fully furnished': 'Fully Furnished',
+            'furnished': 'Fully Furnished',
+            'gym': 'Gym Access',
+            'gym access': 'Gym Access',
+            'fitness center': 'Gym Access',
+            'pool': 'Pool',
+            'swimming pool': 'Pool',
+            'high-speed internet': 'High-Speed Internet',
+            'internet': 'High-Speed Internet',
+            'wifi': 'High-Speed Internet',
+            'parking': 'Parking Included',
+            'parking included': 'Parking Included',
+            'cable': 'Cable TV Included',
+            'cable tv': 'Cable TV Included',
+            'cable tv included': 'Cable TV Included',
+            'utilities': 'Utilities Included',
+            'utilities included': 'Utilities Included',
+            'pet friendly': 'Pet Friendly',
+            'pets allowed': 'Pet Friendly',
+            'balcony': 'Balcony/Patio',
+            'patio': 'Balcony/Patio',
+            'balcony/patio': 'Balcony/Patio',
+            'air conditioning': 'Air Conditioning',
+            'a/c': 'Air Conditioning',
+            'dishwasher': 'Dishwasher',
+            'security': 'Security System',
+            'security system': 'Security System',
+            'study room': 'Study Room',
+            'bus': 'Bus Route',
+            'bus route': 'Bus Route',
+            'bus pass': 'Bus Route',
+            'cata': 'Bus Route',
+            'free cata bus pass': 'Bus Route',
+            'transportation': 'Bus Route',
+            'clubhouse': 'Study Room', // Mapping clubhouse to Study Room since no exact match
+          };
+          
+          // Log for debugging
+          console.log("Extracted amenities:", data.amenities);
+          
+          // Collect matching amenities
+          const selectedAmenities = new Set<string>();
+          
+          // First, try to match extracted amenities to our standard list
+          data.amenities.forEach(amenity => {
+            const amenityLower = amenity.toLowerCase();
+            console.log("Checking amenity:", amenityLower);
+            
+            // Check for direct matches in the mapping
+            for (const [key, value] of Object.entries(amenityMappings)) {
+              if (amenityLower.includes(key)) {
+                console.log(`Found match: ${key} -> ${value}`);
+                selectedAmenities.add(value);
+                break;
+              }
+            }
+          });
+          
+          // Update the amenities state with the matched amenities
+          setAmenities(Array.from(selectedAmenities));
+        }
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during analysis');
@@ -386,16 +519,15 @@ export default function CreateFacebookListingForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <Label htmlFor="price">Price ($ per month) *</Label>
+              <Label htmlFor="price">Price ($ per month)</Label>
               <Input
                 id="price"
                 type="number"
                 min="0"
                 step="0.01"
-                placeholder="e.g. 750"
+                placeholder="e.g. 750 (leave blank for 'Contact for price')"
                 value={price}
                 onChange={e => setPrice(e.target.value)}
-                required
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -428,23 +560,23 @@ export default function CreateFacebookListingForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <Label htmlFor="startDate">Start Date *</Label>
+              <Label htmlFor="startDate">Start Date</Label>
               <Input
                 id="startDate"
                 type="date"
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
-                required
+                placeholder="Leave blank for 'Contact for dates'"
               />
             </div>
             <div>
-              <Label htmlFor="endDate">End Date *</Label>
+              <Label htmlFor="endDate">End Date</Label>
               <Input
                 id="endDate"
                 type="date"
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
-                required
+                placeholder="Leave blank for 'Contact for dates'"
               />
             </div>
           </div>

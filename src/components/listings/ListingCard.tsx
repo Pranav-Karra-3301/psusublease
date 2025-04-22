@@ -17,6 +17,8 @@ interface ListingCardProps {
   image?: string;
   isAgencyListing?: boolean;
   isFacebookListing?: boolean;
+  agencyLogo?: string;
+  agencyName?: string;
 }
 
 export default function ListingCard({
@@ -30,7 +32,9 @@ export default function ListingCard({
   bathrooms,
   image = '/apt_defaults/default.png',
   isAgencyListing = false,
-  isFacebookListing = false
+  isFacebookListing = false,
+  agencyLogo,
+  agencyName
 }: ListingCardProps) {
   const linkPath = isFacebookListing
     ? `/facebook-listings/${id}`
@@ -75,6 +79,20 @@ export default function ListingCard({
             <div>•</div>
             <div>{bathrooms && bathrooms > 0 ? `${bathrooms} ${bathrooms === 1 ? 'Bath' : 'Baths'}` : '- Bath'}</div>
           </div>
+          
+          {isAgencyListing && agencyLogo && (
+            <div className="flex items-center justify-end mt-3 pt-3 border-t border-border-light">
+              <span className="text-xs text-text-secondary mr-2">Listed by:</span>
+              <div className="relative h-6 w-6 rounded overflow-hidden">
+                <Image 
+                  src={agencyLogo} 
+                  alt={agencyName || 'Agency'} 
+                  fill 
+                  className="object-contain"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </Link>

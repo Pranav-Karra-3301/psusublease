@@ -85,23 +85,13 @@ export default function Header() {
         </button>
         
         {/* Desktop navigation */}
-        <nav className="hidden md:flex items-center gap-4">
-          <div className="flex gap-2">
-            <Link href="/listings" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
-              Browse Listings
-            </Link>
-            <Link href="/requests" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
-              Browse Requests
-            </Link>
-          </div>
-          <div className="flex gap-2">
-            <Link href="/create" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
-              Post Sublease
-            </Link>
-            <Link href="/requests/create" className="px-4 py-2 rounded-xl bg-primary text-white shadow-lg font-semibold hover:bg-primary/90 hover:-translate-y-1 transition-all duration-200">
-              Post Request
-            </Link>
-          </div>
+        <nav className="hidden md:flex items-center space-x-1">
+          <Link href="/listings" className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
+            Listings
+          </Link>
+          <Link href="/requests" className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
+            Requests
+          </Link>
           {user ? (
             <>
               {isAgency ? (
@@ -140,6 +130,11 @@ export default function Header() {
                     <Link href="/create" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
                       Create Sublease
                     </Link>
+                    {!isAgency && (
+                      <Link href="/agency/register" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
+                        Register Agency
+                      </Link>
+                    )}
                     <button
                       onClick={handleSignOut}
                       className="block w-full text-left px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent disabled:opacity-50"
@@ -199,6 +194,11 @@ export default function Header() {
                   <Link href="/create" className="block py-3 border-b border-border-light">
                     Create Sublease
                   </Link>
+                  {!isAgency && (
+                    <Link href="/agency/register" className="block py-3 border-b border-border-light">
+                      Register Agency
+                    </Link>
+                  )}
                   <button
                     onClick={handleSignOut}
                     className="block w-full text-left py-3 text-text-primary disabled:opacity-50"
@@ -223,4 +223,4 @@ export default function Header() {
       </div>
     </header>
   );
-} 
+}

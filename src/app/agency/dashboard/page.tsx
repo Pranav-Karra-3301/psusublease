@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAgencies } from '@/hooks/useAgencies';
+import { useAuthContext } from '@/components/auth/AuthProvider';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
@@ -11,6 +12,7 @@ import Image from 'next/image';
 
 export default function AgencyDashboardPage() {
   const router = useRouter();
+  const { user } = useAuthContext();
   const { fetchMyAgency, fetchAgencyListings } = useAgencies();
   const [loading, setLoading] = useState(true);
   const [agency, setAgency] = useState<Agency | null>(null);
@@ -95,21 +97,52 @@ export default function AgencyDashboardPage() {
   return (
     <div className="container mx-auto px-4 py-16 mt-16">
       <div className="max-w-6xl mx-auto">
+        {/* Dashboard Header with Logo */}
+        <div className="mb-8 pb-6 border-b border-border-light flex items-center">
+          {agency.logo_url ? (
+            <div className="relative h-16 w-16 mr-4 overflow-hidden">
+              <Image 
+                src={agency.logo_url} 
+                alt={agency.name} 
+                fill
+                sizes="64px"
+                className="object-contain rounded-lg border border-border-light"
+                priority
+              />
+            </div>
+          ) : (
+            <div className="w-16 h-16 rounded-lg bg-bg-secondary border border-border-light flex items-center justify-center mr-4">
+              <span className="text-3xl font-bold text-text-secondary/50">
+                {agency.name.charAt(0)}
+              </span>
+            </div>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary">{agency.name} Dashboard</h1>
+            <p className="text-text-secondary">
+              Manage your properties and listings
+            </p>
+          </div>
+        </div>
+        
         <div className="flex flex-col md:flex-row items-start gap-6 mb-8">
           <div className="md:w-1/3">
             <Card className="p-6 h-full">
-              <div className="flex flex-col items-center mb-4">
+              <div className="flex flex-col items-center mb-6">
                 {agency.logo_url ? (
-                  <Image 
-                    src={agency.logo_url} 
-                    alt={agency.name} 
-                    width={120} 
-                    height={120} 
-                    className="rounded-lg object-cover mb-4"
-                  />
+                  <div className="relative w-32 h-32 mb-4 overflow-hidden">
+                    <Image 
+                      src={agency.logo_url} 
+                      alt={agency.name} 
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-contain rounded-lg border border-border-light"
+                      priority
+                    />
+                  </div>
                 ) : (
-                  <div className="w-24 h-24 rounded-lg bg-gray-200 flex items-center justify-center mb-4">
-                    <span className="text-3xl font-bold text-gray-400">
+                  <div className="w-32 h-32 rounded-lg bg-bg-secondary border border-border-light flex items-center justify-center mb-4">
+                    <span className="text-4xl font-bold text-text-secondary/50">
                       {agency.name.charAt(0)}
                     </span>
                   </div>
@@ -178,7 +211,7 @@ export default function AgencyDashboardPage() {
               </div>
               
               <div className="mt-6 pt-6 border-t border-border-light">
-                <Link href="/agency/edit-profile">
+                <Link href="/agency/profile">
                   <Button variant="secondary" className="w-full">
                     Edit Agency Profile
                   </Button>
@@ -199,69 +232,60 @@ export default function AgencyDashboardPage() {
               </div>
               
               {listings.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-text-secondary mb-4">You don't have any property listings yet.</p>
+                <div className="py-8 text-center border border-dashed border-border-light rounded-lg">
+                  <p className="text-text-secondary mb-4">You don't have any active listings yet.</p>
                   <Link href="/agency/create-listing">
-                    <Button>
-                      Create Your First Listing
-                    </Button>
+                    <Button>Create Your First Listing</Button>
                   </Link>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {listings.map((listing) => (
-                    <div key={listing.id} className="border border-border-light rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-lg font-semibold text-text-primary">{listing.property_name}</h3>
-                          <p className="text-text-secondary text-sm">{listing.address}</p>
-                          
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            <span className="bg-bg-secondary text-text-secondary text-xs px-2 py-1 rounded-full">
-                              Available: {formatDate(listing.start_date)}
-                            </span>
-                            {listing.floor_plans && (
-                              <span className="bg-bg-secondary text-text-secondary text-xs px-2 py-1 rounded-full">
-                                {listing.floor_plans.length} Floor Plans
+                    <div key={listing.id} className="border border-border-light rounded-lg p-4 hover:border-accent transition-all duration-200">
+                      <div className="flex flex-col sm:flex-row justify-between">
+                        <div className="flex">
+                          {agency.logo_url && (
+                            <div className="relative h-12 w-12 rounded-lg overflow-hidden border border-border-light mr-3 hidden sm:block">
+                              <Image
+                                src={agency.logo_url}
+                                alt={agency.name}
+                                fill
+                                className="object-contain"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-medium text-text-primary">{listing.property_name}</h3>
+                            <p className="text-text-secondary text-sm">{listing.address}</p>
+                            
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-bg-secondary text-text-primary">
+                                {listing.floor_plans?.length || 0} Floor Plans
                               </span>
-                            )}
-                            {listing.application_deadline && (
-                              <span className="bg-bg-secondary text-text-secondary text-xs px-2 py-1 rounded-full">
-                                Deadline: {formatDate(listing.application_deadline)}
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-bg-secondary text-text-primary">
+                                {new Date(listing.start_date) <= new Date() && new Date(listing.end_date) >= new Date()
+                                  ? 'Available Now'
+                                  : new Date(listing.start_date) > new Date()
+                                    ? `Available ${formatDate(listing.start_date)}`
+                                    : 'Not Available'}
                               </span>
-                            )}
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="flex gap-2">
-                          <Link href={`/agency-listings/${listing.id}/edit`}>
-                            <Button variant="secondary" size="sm">
-                              Edit
+                        <div className="flex mt-3 sm:mt-0">
+                          <Link href={`/agency-listings/${listing.id}`}>
+                            <Button variant="secondary" size="sm" className="mr-2">
+                              View
                             </Button>
                           </Link>
-                          <Link href={`/agency-listings/${listing.id}`}>
-                            <Button variant="outline" size="sm">
-                              View
+                          <Link href={`/agency/create-listing?edit=${listing.id}`}>
+                            <Button variant="secondary" size="sm" className="mr-2">
+                              Edit
                             </Button>
                           </Link>
                         </div>
                       </div>
-                      
-                      {/* Floor plans summary */}
-                      {listing.floor_plans && listing.floor_plans.length > 0 && (
-                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {listing.floor_plans.map((plan) => (
-                            <div key={plan.id} className="bg-bg-secondary/50 rounded-lg p-3 text-sm">
-                              <div className="font-medium">{plan.name}</div>
-                              <div className="text-text-secondary">
-                                {plan.bedrooms} bed / {plan.bathrooms} bath
-                                {plan.square_feet ? ` · ${plan.square_feet} sq ft` : ''}
-                              </div>
-                              <div className="font-semibold mt-1">${plan.price}/mo</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -285,7 +309,7 @@ export default function AgencyDashboardPage() {
                   </div>
                 </Link>
                 
-                <Link href="/agency/edit-profile">
+                <Link href="/agency/profile">
                   <div className="border border-border-light rounded-lg p-4 hover:border-accent transition duration-200">
                     <h3 className="font-medium text-text-primary">Update Profile</h3>
                     <p className="text-text-secondary text-sm">Update your agency information</p>

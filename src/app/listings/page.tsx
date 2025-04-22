@@ -134,7 +134,11 @@ export default function ListingsPage() {
             image: listing.images && listing.images.length > 0 ? 
               listing.images[0] : '/apt_defaults/default.png',
             isAgencyListing: !!listing.is_agency_listing,
-            is_facebook_listing: !!listing.is_facebook_listing
+            isFacebookListing: !!listing.is_facebook_listing,
+            agencyLogo: listing.is_agency_listing && listing.agency?.logo_url ? 
+              listing.agency.logo_url : undefined,
+            agencyName: listing.is_agency_listing && listing.agency?.name ? 
+              listing.agency.name : undefined
           }));
           
           if (isMounted) {

@@ -51,6 +51,8 @@ export default async function FacebookListingDetailPage({ params }: { params: { 
       author_profile_link: facebookListing.author_profile_link,
       author_username: facebookListing.author_username,
       parsed_listing_data: parsed,
+      display_price: facebookListing.display_price || (parsed.price ? `${parsed.price}` : 'Contact for price'),
+      display_dates: facebookListing.display_dates || ((parsed.start_date && parsed.end_date) ? `${parsed.start_date} to ${parsed.end_date}` : 'Contact for dates'),
     };
     
     // Pass the listing data as props to the client component

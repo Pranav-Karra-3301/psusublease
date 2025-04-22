@@ -680,6 +680,30 @@ export default function ProfilePage() {
     );
   };
   
+  // Add this section in the profile page content, ideally in a new card or section
+  {user && (
+    <div className="mt-6 p-6 bg-white rounded-lg shadow-sm border border-border-light">
+      <h2 className="text-xl font-bold mb-4">Agency Tools</h2>
+      <div className="space-y-4">
+        <p>If you're having trouble accessing your agency dashboard, use these direct links:</p>
+        <div className="flex flex-wrap gap-3">
+          <Link 
+            href="/agency/dashboard" 
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+          >
+            Direct Access: Agency Dashboard
+          </Link>
+          <Link 
+            href="/profile/debug" 
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+          >
+            Debug Agency Status
+          </Link>
+        </div>
+      </div>
+    </div>
+  )}
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">

@@ -8,10 +8,12 @@ import Input from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import supabase from '@/utils/supabase';
 import { useAgencies } from '@/hooks/useAgencies';
+import { useAuthContext } from '@/components/auth/AuthProvider';
 
 export default function AgencyProfilePage() {
   const router = useRouter();
   const { fetchMyAgency } = useAgencies();
+  const { user } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [agency, setAgency] = useState<any>(null);
@@ -32,6 +34,12 @@ export default function AgencyProfilePage() {
     const loadAgency = async () => {
       setLoading(true);
       try {
+        // Check if user is authenticated
+        if (!user) {
+          router.push('/auth/signin?redirect=/agency/profile');
+          return;
+        }
+        
         const agencyData = await fetchMyAgency();
         
         if (!agencyData) {
@@ -54,15 +62,15 @@ export default function AgencyProfilePage() {
           setLogoPreview(agencyData.logo_url);
         }
       } catch (err: any) {
-        setError('Error loading agency profile. Please try again.');
         console.error('Error loading agency:', err);
+        setError('Error loading agency profile. Please try again.');
       } finally {
         setLoading(false);
       }
     };
     
     loadAgency();
-  }, [fetchMyAgency, router]);
+  }, [fetchMyAgency, router, user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -108,21 +116,29 @@ export default function AgencyProfilePage() {
       // Upload new logo if provided
       let logoUrl = agency.logo_url;
       if (formData.logo) {
-        const fileExt = formData.logo.name.split('.').pop();
-        const fileName = `${agency.id}-agency-logo-${Date.now()}.${fileExt}`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('agency-logos')
-          .upload(fileName, formData.logo);
-        
-        if (uploadError) throw uploadError;
-        
-        // Get the public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('agency-logos')
-          .getPublicUrl(fileName);
-        
-        logoUrl = publicUrl;
+        try {
+          const fileExt = formData.logo.name.split('.').pop();
+          const fileName = `${agency.id}-agency-logo-${Date.now()}.${fileExt}`;
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('agency-logos')
+            .upload(fileName, formData.logo);
+          
+          if (uploadError) {
+            console.error('Logo upload error:', uploadError);
+            throw new Error(`Logo upload failed: ${uploadError.message}`);
+          }
+          
+          // Get the public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('agency-logos')
+            .getPublicUrl(fileName);
+          
+          logoUrl = publicUrl;
+        } catch (uploadErr: any) {
+          console.error('Logo upload error:', uploadErr);
+          throw new Error(`Logo upload failed: ${uploadErr.message}`);
+        }
       }
       
       // Prepare agency data for update
@@ -153,7 +169,9 @@ export default function AgencyProfilePage() {
       const result = await response.json();
       
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to update agency profile');
+        const errorMessage = result.error || 'Failed to update agency profile';
+        console.error('API error response:', result);
+        throw new Error(errorMessage);
       }
       
       setSuccess(true);
@@ -165,16 +183,36 @@ export default function AgencyProfilePage() {
       
     } catch (error: any) {
       console.error('Error updating agency profile:', error);
-      setError(error.message || 'Failed to update profile');
+      setError(error.message || 'Failed to update profile. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
+  // Show loading state
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16 mt-16 flex justify-center">
         <div className="animate-pulse">Loading...</div>
+      </div>
+    );
+  }
+
+  // Show error state if no agency and not loading
+  if (!agency && !loading) {
+    return (
+      <div className="container mx-auto px-4 py-16 mt-16">
+        <Card className="p-6 max-w-3xl mx-auto">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-text-primary mb-4">Agency Profile Not Found</h1>
+            <p className="text-text-secondary mb-6">
+              You don't have an agency profile yet. Register your agency to get started.
+            </p>
+            <Button onClick={() => router.push('/agency/register')}>
+              Register Agency
+            </Button>
+          </div>
+        </Card>
       </div>
     );
   }

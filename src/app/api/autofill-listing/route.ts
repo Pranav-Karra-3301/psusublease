@@ -72,7 +72,9 @@ Return the data in JSON format with these exact keys:
 
 For dates, use YYYY-MM-DD format. For bedrooms and bathrooms, extract the number only.
 If an apartment name matches one of the common apartments in State College, PA, identify it. If not, put the name in customApartment.
-For missing information, leave the field empty or use appropriate default values.`
+For missing information, leave the field empty or use appropriate default values.
+
+If the post mentions lease dates in terms of school years or academic years, note that the school year typically starts in August and ends in July. If exact dates are not provided, use the first day of the start month (e.g., 2023-08-01) and the last day of the end month (e.g., 2024-07-31). If a post mentions a specific academic year like "2025-2026 year", interpret this as August 2025 to July 2026.`
       },
       {
         role: 'user',

@@ -267,19 +267,20 @@ export default function AgencyListingPage() {
             <h2 className="text-xl font-semibold text-text-primary mb-4">Offered By</h2>
             <div className="flex items-center mb-4">
               {listing.agency && listing.agency.logo_url ? (
-                <div className="relative h-12 w-12 rounded-full overflow-hidden mr-4">
+                <div className="relative h-16 w-16 rounded-lg overflow-hidden mr-4 border border-border-light">
                   <Image
                     src={listing.agency.logo_url}
                     alt={listing.agency.name}
                     fill
-                    className="object-cover"
+                    sizes="(max-width: 768px) 80px, 64px"
+                    className="object-contain"
                   />
                 </div>
               ) : (
-                <div className="h-12 w-12 bg-bg-secondary rounded-full flex items-center justify-center mr-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-text-tertiary">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
+                <div className="h-16 w-16 bg-bg-secondary rounded-lg flex items-center justify-center mr-4 border border-border-light">
+                  <span className="text-2xl font-bold text-text-secondary/50">
+                    {listing.agency?.name.charAt(0) || 'A'}
+                  </span>
                 </div>
               )}
               <div>

@@ -135,80 +135,92 @@ function processExtractedData(data: any, postText: string, ocrTexts: string[]) {
     processed.description = desc || 'No description provided';
   }
   
-  // 3. Ensure price is present and in correct format
-  if (!processed.price || processed.price === 'N/A' || processed.price === 0) {
-    // Handle "$X + utilities" pattern
-    const priceUtilitiesMatch = allText.match(/\$(\d+)\s*\+\s*utilities/i);
-    if (priceUtilitiesMatch) {
-      processed.price = parseInt(priceUtilitiesMatch[1]);
-    } else {
-      // Try to extract price from text
-      const priceMatch = allText.match(/\$([0-9,.]+)/);
-      if (priceMatch) {
-        processed.price = parseFloat(priceMatch[1].replace(/,/g, ''));
-      } else {
-        // Default price if none found
-        processed.price = 0;
-      }
-    }
-  } else if (typeof processed.price === 'string') {
+  // 3. Process price - make it optional
+  if (processed.price === 'N/A' || processed.price === '') {
+    // Leave it undefined/blank if not provided - do not set default
+    processed.price = undefined;
+  } else if (processed.price && typeof processed.price === 'string') {
     // Convert string price to number if needed
     processed.price = parseFloat(processed.price.replace(/,/g, ''));
   }
   
-  // 4. Ensure dates are present and in correct format
+  // 4. Process dates - make them optional and handle academic year references
   const currentYear = new Date().getFullYear();
   
-  if (!processed.start_date || processed.start_date === 'N/A') {
-    // Handle "Month DD till Month DD" pattern without year
-    const simpleDateRangeMatch = allText.match(/([A-Za-z]+)\s+(\d{1,2})\s+till\s+([A-Za-z]+)\s+(\d{1,2})/i);
-    if (simpleDateRangeMatch) {
-      const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-      
-      const startMonth = months.findIndex(m => m.toLowerCase().startsWith(simpleDateRangeMatch[1].toLowerCase()));
-      const startDay = parseInt(simpleDateRangeMatch[2]);
-      
-      if (startMonth !== -1) {
-        processed.start_date = `${currentYear}-${String(startMonth + 1).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
-      } else {
-        processed.start_date = `${currentYear}-05-01`; // Default to May 1st of current year
-      }
-    } else {
-      processed.start_date = `${currentYear}-05-01`; // Default to May 1st of current year
+  // Check for academic year patterns in the text
+  // Enhanced to catch more formats including "25/26 year" without spaces
+  const academicYearPattern1 = allText.match(/(\d{4})\s*[-\/]\s*(\d{4})/);
+  const academicYearPattern2 = allText.match(/(\d{2})\s*[-\/]\s*(\d{2})(?:\s*school\s*year|\s*academic\s*year|\s*year)/i);
+  const academicYearPattern3 = /academic\s*year|school\s*year/i.test(allText);
+  
+  if (academicYearPattern1) {
+    // Handle full year format like "2025-2026" or "2025/2026"
+    const startYear = parseInt(academicYearPattern1[1]);
+    const endYear = parseInt(academicYearPattern1[2]);
+    processed.start_date = `${startYear}-08-01`;
+    processed.end_date = `${endYear}-07-31`;
+  } else if (academicYearPattern2) {
+    // Handle shortened year format like "25-26 school year" or "25/26 year"
+    let startYear = parseInt(academicYearPattern2[1]);
+    let endYear = parseInt(academicYearPattern2[2]);
+    
+    // Convert 2-digit years to 4-digit years
+    if (startYear < 100) {
+      // Assume years are in the 2000s
+      startYear = startYear < 50 ? 2000 + startYear : 1900 + startYear;
+      endYear = endYear < 50 ? 2000 + endYear : 1900 + endYear;
     }
-  } else if (!processed.start_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    // If not in YYYY-MM-DD format, try to convert
-    try {
-      processed.start_date = new Date(processed.start_date).toISOString().split('T')[0];
-    } catch (e) {
-      processed.start_date = `${currentYear}-05-01`;
+    
+    processed.start_date = `${startYear}-08-01`;
+    processed.end_date = `${endYear}-07-31`;
+  } else if (academicYearPattern3) {
+    // If it just mentions "academic year" or "school year" without specifying which one,
+    // use the next academic year if we're past January
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const nextYear = thisYear + 1;
+    
+    // If we're in second half of the year, assume it's for next academic year
+    if (now.getMonth() >= 6) { // July or later
+      processed.start_date = `${thisYear}-08-01`;
+      processed.end_date = `${nextYear}-07-31`;
+    } else {
+      const prevYear = thisYear - 1;
+      processed.start_date = `${prevYear}-08-01`;
+      processed.end_date = `${thisYear}-07-31`;
     }
   }
   
-  if (!processed.end_date || processed.end_date === 'N/A') {
-    // Handle "Month DD till Month DD" pattern without year
-    const simpleDateRangeMatch = allText.match(/([A-Za-z]+)\s+(\d{1,2})\s+till\s+([A-Za-z]+)\s+(\d{1,2})/i);
-    if (simpleDateRangeMatch) {
-      const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-      
-      const endMonth = months.findIndex(m => m.toLowerCase().startsWith(simpleDateRangeMatch[3].toLowerCase()));
-      const endDay = parseInt(simpleDateRangeMatch[4]);
-      
-      if (endMonth !== -1) {
-        processed.end_date = `${currentYear}-${String(endMonth + 1).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
-      } else {
-        processed.end_date = `${currentYear}-08-31`; // Default to Aug 31st of current year
+  // If no dates were found but we have start_date from OpenAI, process it
+  if (processed.start_date && processed.start_date !== 'N/A' && processed.start_date !== '') {
+    if (!processed.start_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // If not in YYYY-MM-DD format, try to convert
+      try {
+        processed.start_date = new Date(processed.start_date).toISOString().split('T')[0];
+      } catch (e) {
+        // Leave it undefined if conversion fails
+        processed.start_date = undefined;
       }
-    } else {
-      processed.end_date = `${currentYear}-08-31`; // Default to Aug 31st of current year
     }
-  } else if (!processed.end_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    // If not in YYYY-MM-DD format, try to convert
-    try {
-      processed.end_date = new Date(processed.end_date).toISOString().split('T')[0];
-    } catch (e) {
-      processed.end_date = `${currentYear}-08-31`;
+  } else if (!academicYearPattern1 && !academicYearPattern2 && !academicYearPattern3) {
+    // If no patterns were found and no valid date from OpenAI, leave it undefined
+    processed.start_date = undefined;
+  }
+  
+  // Similarly for end_date
+  if (processed.end_date && processed.end_date !== 'N/A' && processed.end_date !== '') {
+    if (!processed.end_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // If not in YYYY-MM-DD format, try to convert
+      try {
+        processed.end_date = new Date(processed.end_date).toISOString().split('T')[0];
+      } catch (e) {
+        // Leave it undefined if conversion fails
+        processed.end_date = undefined;
+      }
     }
+  } else if (!academicYearPattern1 && !academicYearPattern2 && !academicYearPattern3) {
+    // If no patterns were found and no valid date from OpenAI, leave it undefined
+    processed.end_date = undefined;
   }
   
   // 5. Ensure bedrooms and bathrooms are numbers
@@ -276,9 +288,41 @@ function processExtractedData(data: any, postText: string, ocrTexts: string[]) {
     }
   }
   
-  // 7. Ensure amenities is an array
+  // 7. Ensure amenities is an array and add common amenities if mentioned but not extracted
   if (!processed.amenities || !Array.isArray(processed.amenities)) {
     processed.amenities = [];
+  }
+  
+  // Look for common amenities in the text that might have been missed
+  const commonAmenities = {
+    'clubhouse': ['club house', 'clubhouse', 'common area', 'community center'],
+    'pool': ['pool', 'swimming'],
+    'gym': ['gym', 'fitness center', 'workout'],
+    'bus pass': ['bus pass', 'cata', 'bus route', 'transportation'],
+    'laundry': ['washer', 'dryer', 'laundry', 'w/d'],
+    'furnished': ['furnished', 'furniture'],
+    'parking': ['parking', 'garage', 'spot', 'space'],
+    'utilities included': ['utilities included', 'utilities paid', 'all utilities'],
+    'wifi': ['wifi', 'internet', 'high-speed'],
+    'cable': ['cable', 'tv'],
+    'balcony': ['balcony', 'patio', 'terrace'],
+    'dishwasher': ['dishwasher'],
+    'pet friendly': ['pet friendly', 'pets allowed', 'dog', 'cat'],
+    'air conditioning': ['a/c', 'air conditioning', 'central air'],
+    'security': ['security', 'gated', 'surveillance']
+  };
+  
+  // Check for each amenity
+  for (const [amenity, keywords] of Object.entries(commonAmenities)) {
+    // Skip if this amenity is already included
+    if (processed.amenities.some(a => a.toLowerCase().includes(amenity.toLowerCase()))) {
+      continue;
+    }
+    
+    // Check if any keyword is in the text
+    if (keywords.some(keyword => allText.toLowerCase().includes(keyword.toLowerCase()))) {
+      processed.amenities.push(amenity.charAt(0).toUpperCase() + amenity.slice(1));
+    }
   }
   
   return processed;
@@ -376,7 +420,7 @@ export async function POST(req: NextRequest) {
 
     // Extract top-level fields from parsed_listing_data
     const custom_apartment = parsed_listing_data.apartment_name || 'Penn State Sublease';
-    const offer_price = parsed_listing_data.price || 0;
+    const offer_price = parsed_listing_data.price !== undefined ? parsed_listing_data.price : null;
     const start_date = parsed_listing_data.start_date || null;
     const end_date = parsed_listing_data.end_date || null;
     const bedrooms = parsed_listing_data.bedrooms || 1;
@@ -389,6 +433,10 @@ export async function POST(req: NextRequest) {
 
     // Use the extracted username if provided, otherwise use the one from the form
     const final_author_username = authorUsername || extracted_author_username || 'Anonymous';
+
+    // Additional fields for display when price or dates are missing
+    const display_price = offer_price !== null ? offer_price : 'Contact for price';
+    const display_dates = (start_date && end_date) ? `${start_date} to ${end_date}` : 'Contact for dates';
 
     // Insert into facebook_listings table (only listingImageUrls are public)
     const { data: inserted, error: insertError } = await supabaseAdmin.from('facebook_listings').insert({
@@ -410,6 +458,8 @@ export async function POST(req: NextRequest) {
       description,
       address,
       special_requirements,
+      display_price,
+      display_dates,
       created_at: new Date(),
       updated_at: new Date(),
     }).select().single();
