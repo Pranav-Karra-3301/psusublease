@@ -7,6 +7,8 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
 import CreateFacebookListingForm from '@/components/listings/CreateFacebookListingForm';
+import SendInvites from '@/components/admin/SendInvites';
+import BlastUser from '@/components/admin/BlastUser';
 
 type StatsType = {
   users: number;
@@ -453,6 +455,16 @@ export default function AdminDashboardPage() {
               }`}
             >
               Facebook Listings
+            </button>
+            <button
+              onClick={() => setActiveTab('email')}
+              className={`py-2 px-4 ${
+                activeTab === 'email'
+                  ? 'text-accent border-b-2 border-accent'
+                  : 'text-text-secondary'
+              }`}
+            >
+              Email
             </button>
           </div>
         </div>
@@ -909,6 +921,13 @@ export default function AdminDashboardPage() {
             </Card>
             <CreateFacebookListingForm />
           </>
+        )}
+        
+        {activeTab === 'email' && (
+          <div className="space-y-8">
+            <SendInvites />
+            <BlastUser />
+          </div>
         )}
       </div>
     </div>
