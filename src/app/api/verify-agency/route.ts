@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
 
     // Verify the admin token
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(adminToken);
-    if (authError || !user || user.email !== 'pranavkarra001@gmail.com') {
+    const adminEmails = ['pranavkarra001@gmail.com', 'machinelearningpennstate@gmail.com'];
+    if (authError || !user || !adminEmails.includes(user.email ?? '')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
