@@ -94,14 +94,15 @@ export default function AgencyRegistrationForm() {
 
       // Prepare agency data - only include fields that exist in the database
       const agencyData = {
-        userid: user.id,
         name: formData.name,
         website: formData.website || null,
         phone: formData.phone,
         email: formData.email,
+        contact_person: formData.contactPerson || null,
+        google_maps_link: formData.googleMapsLink || null,
         description: formData.description || null,
         logo_url: logoUrl,
-        address: '', // Required field that wasn't previously included
+        additional_emails: additionalEmails.length > 0 ? additionalEmails : null,
       };
 
       // Use the server API route instead of the client-side function

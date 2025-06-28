@@ -95,27 +95,12 @@ export default function Header() {
           {user ? (
             <>
               {isAgency ? (
-                <div className="relative group">
-                  <button className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
-                    Agency
-                  </button>
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-border-light rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="py-1">
-                      <Link href="/agency/dashboard" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
-                        Dashboard
-                      </Link>
-                      <Link href="/agency/create-listing" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
-                        Create Listing
-                      </Link>
-                      <Link href="/agency/profile" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
-                        Edit Agency Profile
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <Link href="/agency/dashboard" className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
+                  My Agency
+                </Link>
               ) : (
                 <Link href="/agency/register" className="px-3 py-2 text-text-primary hover:text-accent rounded-md transition-colors">
-                  Property Managers
+                  Create Agency
                 </Link>
               )}
               <div className="relative group">
@@ -130,7 +115,11 @@ export default function Header() {
                     <Link href="/create" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
                       Create Sublease
                     </Link>
-                    {!isAgency && (
+                    {isAgency ? (
+                      <Link href="/agency/dashboard" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
+                        Agency Dashboard
+                      </Link>
+                    ) : (
                       <Link href="/agency/register" className="block px-4 py-2 text-text-primary hover:bg-bg-secondary hover:text-accent">
                         Register Agency
                       </Link>
@@ -172,20 +161,13 @@ export default function Header() {
                 <>
                   {isAgency ? (
                     <>
-                      <div className="py-3 border-b border-border-light font-medium">Agency</div>
-                      <Link href="/agency/dashboard" className="block py-3 pl-4 border-b border-border-light">
-                        Dashboard
-                      </Link>
-                      <Link href="/agency/create-listing" className="block py-3 pl-4 border-b border-border-light">
-                        Create Listing
-                      </Link>
-                      <Link href="/agency/profile" className="block py-3 pl-4 border-b border-border-light">
-                        Edit Agency Profile
+                      <Link href="/agency/dashboard" className="block py-3 border-b border-border-light">
+                        My Agency
                       </Link>
                     </>
                   ) : (
                     <Link href="/agency/register" className="block py-3 border-b border-border-light">
-                      Property Managers
+                      Create Agency
                     </Link>
                   )}
                   <Link href="/profile" className="block py-3 border-b border-border-light">
@@ -194,6 +176,11 @@ export default function Header() {
                   <Link href="/create" className="block py-3 border-b border-border-light">
                     Create Sublease
                   </Link>
+                  {isAgency && (
+                    <Link href="/agency/dashboard" className="block py-3 border-b border-border-light">
+                      Agency Dashboard
+                    </Link>
+                  )}
                   {!isAgency && (
                     <Link href="/agency/register" className="block py-3 border-b border-border-light">
                       Register Agency

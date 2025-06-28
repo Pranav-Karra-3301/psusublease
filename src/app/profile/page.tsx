@@ -11,11 +11,13 @@ import { useAuthContext } from '@/components/auth/AuthProvider';
 import supabase from '@/utils/supabase';
 import { useSubleaseRequests } from '@/hooks/useSubleaseRequests';
 import RequestGrid from '@/components/requests/RequestGrid';
+import { useAgencies } from '@/hooks/useAgencies';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user } = useAuthContext();
   const { getUserRequests } = useSubleaseRequests();
+  const { fetchMyAgency } = useAgencies();
   const [activeTab, setActiveTab] = useState('listings');
   const [editMode, setEditMode] = useState(false);
   const [userData, setUserData] = useState({
@@ -34,6 +36,7 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [apartments, setApartments] = useState<any[]>([]);
+  const [hasAgency, setHasAgency] = useState(false);
   
   // Fetch user profile data and listings
   useEffect(() => {
@@ -101,7 +104,7 @@ export default function ProfilePage() {
           });
         }
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error fetching user data:', error);
       } finally {
         setProfileLoading(false);
       }
@@ -171,11 +174,23 @@ export default function ProfilePage() {
       }
     }
     
+    // Check if user has an agency
+    async function checkAgencyStatus() {
+      try {
+        const agency = await fetchMyAgency();
+        setHasAgency(!!agency);
+      } catch (error) {
+        console.error('Error checking agency status:', error);
+        setHasAgency(false);
+      }
+    }
+    
     fetchUserData();
     fetchUserListings();
     fetchUserRequests();
     fetchApartments();
-  }, [user, router, getUserRequests]);
+    checkAgencyStatus();
+  }, [user, router, getUserRequests, fetchMyAgency]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -443,7 +458,7 @@ export default function ProfilePage() {
           <p className="text-text-primary capitalize">{userData.userType === 'tenant' ? 'Tenant/Student' : 'Property Manager'}</p>
         </div>
         
-        <div className="pt-4">
+        <div className="pt-4 flex flex-col sm:flex-row gap-3">
           <Button 
             variant="primary"
             onClick={() => setEditMode(true)}
@@ -451,6 +466,12 @@ export default function ProfilePage() {
           >
             Edit Profile
           </Button>
+          
+          {hasAgency && (
+            <Link href="/agency/dashboard">
+              <Button variant="secondary">Agency Dashboard</Button>
+            </Link>
+          )}
         </div>
       </div>
     );

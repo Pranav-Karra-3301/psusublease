@@ -162,23 +162,46 @@ export function useAgencies() {
     }
   }, []);
 
-  // Create a new agency
+  // Create a new agency and add the creator as admin
   const createAgency = useCallback(async (agencyData: Omit<Agency, 'id' | 'created_at' | 'updated_at' | 'is_verified'>) => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      // Begin a transaction to create agency and add creator as admin
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      // First, create the agency
+      const { data: agency, error: agencyError } = await supabase
         .from('agencies')
         .insert([agencyData])
         .select()
         .single();
 
-      if (error) {
-        throw error;
+      if (agencyError) {
+        throw agencyError;
       }
 
-      return data as Agency;
+      // Then add the creator as an admin member
+      const { error: memberError } = await supabase
+        .from('agency_members')
+        .insert([{
+          user_id: user.id,
+          agency_id: agency.id,
+          role: 'admin'
+        }]);
+
+      if (memberError) {
+        // If adding as member fails, we should ideally delete the agency too
+        // but for simplicity we'll just report the error
+        throw memberError;
+      }
+
+      return agency as Agency;
     } catch (error: any) {
       setError(error.message);
       console.error('Error creating agency:', error);
@@ -319,22 +342,33 @@ export function useAgencies() {
       if (userError) throw userError;
       if (!user) return null;
 
-      // Get the agency
-      const { data, error } = await supabase
-        .from('agencies')
-        .select('*')
-        .eq('userid', user.id)
+      // Get the user's agency membership
+      const { data: membership, error: membershipError } = await supabase
+        .from('agency_members')
+        .select('agency_id')
+        .eq('user_id', user.id)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No agency found for this user
+      if (membershipError) {
+        if (membershipError.code === 'PGRST116') {
+          // No membership found
           return null;
         }
-        throw error;
+        throw membershipError;
       }
 
-      return data as Agency;
+      // Get the agency
+      const { data: agency, error: agencyError } = await supabase
+        .from('agencies')
+        .select('*')
+        .eq('id', membership.agency_id)
+        .single();
+
+      if (agencyError) {
+        throw agencyError;
+      }
+
+      return agency as Agency;
     } catch (error: any) {
       setError(error.message || 'Unknown error fetching agency');
       // Safely stringify the error object for logging

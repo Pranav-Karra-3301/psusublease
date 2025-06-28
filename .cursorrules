@@ -1,5 +1,7 @@
 # PSU Leases Design Rules
 
+anything related to supabase, use the supabase MCP tools to access and read or apply migrations
+
 ## Design Principles
 - Follow Outlier's clean, minimalist aesthetic
 - Use generous whitespace (min 2rem between sections)

@@ -39,6 +39,189 @@ export interface Database {
         }
         Relationships: []
       }
+      agencies: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          website: string | null
+          phone: string | null
+          email: string
+          additional_emails: string[] | null
+          contact_person: string | null
+          google_maps_link: string | null
+          description: string | null
+          logo_url: string | null
+          is_verified: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          website?: string | null
+          phone?: string | null
+          email: string
+          additional_emails?: string[] | null
+          contact_person?: string | null
+          google_maps_link?: string | null
+          description?: string | null
+          logo_url?: string | null
+          is_verified?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          website?: string | null
+          phone?: string | null
+          email?: string
+          additional_emails?: string[] | null
+          contact_person?: string | null
+          google_maps_link?: string | null
+          description?: string | null
+          logo_url?: string | null
+          is_verified?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agencies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      agency_listings: {
+        Row: {
+          id: string
+          agency_id: string
+          property_name: string
+          address: string
+          description: string | null
+          amenities: string[] | null
+          utilities_included: string[] | null
+          lease_terms: string | null
+          start_date: string
+          end_date: string | null
+          application_link: string | null
+          application_deadline: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          images: string[] | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          agency_id: string
+          property_name: string
+          address: string
+          description?: string | null
+          amenities?: string[] | null
+          utilities_included?: string[] | null
+          lease_terms?: string | null
+          start_date: string
+          end_date?: string | null
+          application_link?: string | null
+          application_deadline?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          images?: string[] | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          agency_id?: string
+          property_name?: string
+          address?: string
+          description?: string | null
+          amenities?: string[] | null
+          utilities_included?: string[] | null
+          lease_terms?: string | null
+          start_date?: string
+          end_date?: string | null
+          application_link?: string | null
+          application_deadline?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          images?: string[] | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_listings_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      floor_plans: {
+        Row: {
+          id: string
+          agency_listing_id: string
+          name: string
+          bedrooms: number
+          bathrooms: number
+          square_feet: number | null
+          price: number
+          availability: number | null
+          description: string | null
+          images: string[] | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          agency_listing_id: string
+          name: string
+          bedrooms: number
+          bathrooms: number
+          square_feet?: number | null
+          price: number
+          availability?: number | null
+          description?: string | null
+          images?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          agency_listing_id?: string
+          name?: string
+          bedrooms?: number
+          bathrooms?: number
+          square_feet?: number | null
+          price?: number
+          availability?: number | null
+          description?: string | null
+          images?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floor_plans_agency_listing_id_fkey"
+            columns: ["agency_listing_id"]
+            isOneToOne: false
+            referencedRelation: "agency_listings"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       listings: {
         Row: {
           amenities: string[] | null
@@ -154,6 +337,83 @@ export interface Database {
           user_type?: string | null
         }
         Relationships: []
+      }
+      agency_members: {
+        Row: {
+          id: string
+          user_id: string
+          agency_id: string
+          role: string
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          agency_id: string
+          role: string
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          agency_id?: string
+          role?: string
+          joined_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agency_members_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      pending_invites: {
+        Row: {
+          id: string
+          email: string
+          agency_id: string
+          token: string
+          role: string
+          created_at: string
+          used_at: string | null
+        }
+        Insert: {
+          id?: string
+          email: string
+          agency_id: string
+          token: string
+          role?: string
+          created_at?: string
+          used_at?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string
+          agency_id?: string
+          token?: string
+          role?: string
+          created_at?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_invites_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       sublease_requests: {
         Row: {

@@ -6,6 +6,7 @@ import { useAgencies } from '@/hooks/useAgencies';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import AgencyMembers from '@/components/agency/AgencyMembers';
 import Link from 'next/link';
 import { Agency, AgencyListingWithFloorPlans } from '@/types/Agency';
 import Image from 'next/image';
@@ -18,6 +19,7 @@ export default function AgencyDashboardPage() {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [listings, setListings] = useState<AgencyListingWithFloorPlans[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('listings');
 
   useEffect(() => {
     const loadAgencyData = async () => {
@@ -125,9 +127,158 @@ export default function AgencyDashboardPage() {
           </div>
         </div>
         
-        <div className="flex flex-col md:flex-row items-start gap-6 mb-8">
-          <div className="md:w-1/3">
-            <Card className="p-6 h-full">
+        {/* Dashboard Tabs */}
+        <div className="mb-6 border-b border-border-light">
+          <div className="flex overflow-x-auto">
+            <button
+              className={`px-4 py-2 font-medium text-sm mr-4 ${
+                activeTab === 'listings'
+                  ? 'text-accent border-b-2 border-accent'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+              onClick={() => setActiveTab('listings')}
+            >
+              Listings
+            </button>
+            <button
+              className={`px-4 py-2 font-medium text-sm mr-4 ${
+                activeTab === 'members'
+                  ? 'text-accent border-b-2 border-accent'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+              onClick={() => setActiveTab('members')}
+            >
+              Team Members
+            </button>
+            <button
+              className={`px-4 py-2 font-medium text-sm mr-4 ${
+                activeTab === 'profile'
+                  ? 'text-accent border-b-2 border-accent'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+              onClick={() => setActiveTab('profile')}
+            >
+              Agency Profile
+            </button>
+          </div>
+        </div>
+        
+        {/* Listings Tab Content */}
+        {activeTab === 'listings' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-text-primary">Your Listings</h2>
+              <Link href="/agency/create-listing">
+                <Button>
+                  + Add New Listing
+                </Button>
+              </Link>
+            </div>
+              
+            {listings.length === 0 ? (
+              <Card className="p-8 text-center">
+                <p className="text-text-secondary mb-4">You don't have any active listings yet.</p>
+                <Link href="/agency/create-listing">
+                  <Button>Create Your First Listing</Button>
+                </Link>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {listings.map((listing) => (
+                  <Card key={listing.id} className="p-4 hover:border-accent transition-all duration-200">
+                    <div className="flex flex-col sm:flex-row justify-between">
+                      <div className="flex">
+                        {agency.logo_url && (
+                          <div className="relative h-12 w-12 rounded-lg overflow-hidden border border-border-light mr-3 hidden sm:block">
+                            <Image
+                              src={agency.logo_url}
+                              alt={agency.name}
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-bold text-text-primary">{listing.property_name}</h3>
+                          <p className="text-sm text-text-secondary">{listing.address}</p>
+                          <div className="mt-1 space-x-2 text-xs">
+                            <span className="inline-block px-2 py-0.5 bg-bg-secondary text-text-secondary rounded">
+                              Available from {formatDate(listing.start_date)}
+                            </span>
+                            {listing.floor_plans && listing.floor_plans.length > 0 && (
+                              <span className="inline-block px-2 py-0.5 bg-bg-secondary text-text-secondary rounded">
+                                {listing.floor_plans.length} Floor Plan{listing.floor_plans.length !== 1 && 's'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex mt-3 sm:mt-0 space-x-2">
+                        <Link href={`/agency/edit-listing/${listing.id}`}>
+                          <Button variant="secondary" size="sm">
+                            Edit
+                          </Button>
+                        </Link>
+                        <Link href={`/listings/${listing.id}`}>
+                          <Button variant="secondary" size="sm">
+                            View
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+            
+            <Card className="p-6">
+              <h2 className="text-xl font-bold text-text-primary mb-4">Quick Links</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Link href="/agency/create-listing">
+                  <div className="border border-border-light rounded-lg p-4 hover:border-accent transition duration-200">
+                    <h3 className="font-medium text-text-primary">Create Listing</h3>
+                    <p className="text-text-secondary text-sm">Add a new property listing with floor plans</p>
+                  </div>
+                </Link>
+                
+                <Link href="/listings">
+                  <div className="border border-border-light rounded-lg p-4 hover:border-accent transition duration-200">
+                    <h3 className="font-medium text-text-primary">Browse All Listings</h3>
+                    <p className="text-text-secondary text-sm">See what's available on the platform</p>
+                  </div>
+                </Link>
+                
+                <Link href="/requests">
+                  <div className="border border-border-light rounded-lg p-4 hover:border-accent transition duration-200">
+                    <h3 className="font-medium text-text-primary">View Lease Requests</h3>
+                    <p className="text-text-secondary text-sm">Browse what students are looking for</p>
+                  </div>
+                </Link>
+              </div>
+            </Card>
+          </div>
+        )}
+        
+        {/* Members Tab Content */}
+        {activeTab === 'members' && (
+          <div>
+            <AgencyMembers agency={agency} />
+          </div>
+        )}
+        
+        {/* Profile Tab Content */}
+        {activeTab === 'profile' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-text-primary">Agency Profile</h2>
+              <Link href="/agency/profile">
+                <Button>
+                  Edit Profile
+                </Button>
+              </Link>
+            </div>
+            
+            <Card className="p-6">
               <div className="flex flex-col items-center mb-6">
                 {agency.logo_url ? (
                   <div className="relative w-32 h-32 mb-4 overflow-hidden">
@@ -209,123 +360,9 @@ export default function AgencyDashboardPage() {
                   <p className="text-text-primary">{formatDate(agency.created_at)}</p>
                 </div>
               </div>
-              
-              <div className="mt-6 pt-6 border-t border-border-light">
-                <Link href="/agency/profile">
-                  <Button variant="secondary" className="w-full">
-                    Edit Agency Profile
-                  </Button>
-                </Link>
-              </div>
             </Card>
           </div>
-          
-          <div className="md:w-2/3">
-            <Card className="p-6 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-text-primary">Your Listings</h2>
-                <Link href="/agency/create-listing">
-                  <Button>
-                    + Add New Listing
-                  </Button>
-                </Link>
-              </div>
-              
-              {listings.length === 0 ? (
-                <div className="py-8 text-center border border-dashed border-border-light rounded-lg">
-                  <p className="text-text-secondary mb-4">You don't have any active listings yet.</p>
-                  <Link href="/agency/create-listing">
-                    <Button>Create Your First Listing</Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {listings.map((listing) => (
-                    <div key={listing.id} className="border border-border-light rounded-lg p-4 hover:border-accent transition-all duration-200">
-                      <div className="flex flex-col sm:flex-row justify-between">
-                        <div className="flex">
-                          {agency.logo_url && (
-                            <div className="relative h-12 w-12 rounded-lg overflow-hidden border border-border-light mr-3 hidden sm:block">
-                              <Image
-                                src={agency.logo_url}
-                                alt={agency.name}
-                                fill
-                                className="object-contain"
-                              />
-                            </div>
-                          )}
-                          <div>
-                            <h3 className="font-medium text-text-primary">{listing.property_name}</h3>
-                            <p className="text-text-secondary text-sm">{listing.address}</p>
-                            
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-bg-secondary text-text-primary">
-                                {listing.floor_plans?.length || 0} Floor Plans
-                              </span>
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-bg-secondary text-text-primary">
-                                {new Date(listing.start_date) <= new Date() && new Date(listing.end_date) >= new Date()
-                                  ? 'Available Now'
-                                  : new Date(listing.start_date) > new Date()
-                                    ? `Available ${formatDate(listing.start_date)}`
-                                    : 'Not Available'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex mt-3 sm:mt-0">
-                          <Link href={`/agency-listings/${listing.id}`}>
-                            <Button variant="secondary" size="sm" className="mr-2">
-                              View
-                            </Button>
-                          </Link>
-                          <Link href={`/agency/create-listing?edit=${listing.id}`}>
-                            <Button variant="secondary" size="sm" className="mr-2">
-                              Edit
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-bold text-text-primary mb-4">Quick Links</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Link href="/agency/create-listing">
-                  <div className="border border-border-light rounded-lg p-4 hover:border-accent transition duration-200">
-                    <h3 className="font-medium text-text-primary">Create Listing</h3>
-                    <p className="text-text-secondary text-sm">Add a new property listing with floor plans</p>
-                  </div>
-                </Link>
-                
-                <Link href="/listings">
-                  <div className="border border-border-light rounded-lg p-4 hover:border-accent transition duration-200">
-                    <h3 className="font-medium text-text-primary">Browse All Listings</h3>
-                    <p className="text-text-secondary text-sm">See what's available on the platform</p>
-                  </div>
-                </Link>
-                
-                <Link href="/agency/profile">
-                  <div className="border border-border-light rounded-lg p-4 hover:border-accent transition duration-200">
-                    <h3 className="font-medium text-text-primary">Update Profile</h3>
-                    <p className="text-text-secondary text-sm">Update your agency information</p>
-                  </div>
-                </Link>
-                
-                <Link href="/requests">
-                  <div className="border border-border-light rounded-lg p-4 hover:border-accent transition duration-200">
-                    <h3 className="font-medium text-text-primary">View Lease Requests</h3>
-                    <p className="text-text-secondary text-sm">Browse what students are looking for</p>
-                  </div>
-                </Link>
-              </div>
-            </Card>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

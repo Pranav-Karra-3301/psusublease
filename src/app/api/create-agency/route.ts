@@ -36,39 +36,88 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure the agency userid matches the authenticated user
-    if (agencyData.userid !== user.id) {
+    // Migrate from userid to user_id for compatibility
+    const updatedAgencyData = {
+      ...agencyData,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_verified: false, // Default to not verified
+    };
+    
+    // Remove the old userid field if it exists
+    if ('userid' in updatedAgencyData) {
+      delete updatedAgencyData.userid;
+    }
+
+    // Ensure the user is not already a member of an agency
+    const { data: existingMembership, error: membershipError } = await supabaseAdmin
+      .from('agency_members')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (membershipError && membershipError.code !== 'PGRST116') {
+      console.error('Error checking existing membership:', membershipError);
       return NextResponse.json(
-        { error: 'Agency userid does not match authenticated user' },
-        { status: 403 }
+        { error: `Error checking user's existing agency membership: ${membershipError.message}` },
+        { status: 500 }
       );
     }
 
-    // Create the agency with admin privileges (bypassing RLS)
-    const { data, error } = await supabaseAdmin
+    if (existingMembership) {
+      return NextResponse.json(
+        { error: 'You are already a member of an agency. You must leave your current agency first.' },
+        { status: 400 }
+      );
+    }
+
+    // Begin a transaction to create the agency and add the user as admin
+    // Create the agency
+    const { data: agency, error } = await supabaseAdmin
       .from('agencies')
-      .insert([{
-        ...agencyData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_verified: false, // Default to not verified
-      }])
+      .insert([updatedAgencyData])
       .select()
       .single();
 
     if (error) {
-      console.error('Database error:', error);
+      console.error('Database error creating agency:', error);
       return NextResponse.json(
         { error: `Error creating agency: ${error.message}` },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true, data });
+    // Add the user as an admin member
+    const { error: memberError } = await supabaseAdmin
+      .from('agency_members')
+      .insert([{
+        user_id: user.id,
+        agency_id: agency.id,
+        role: 'admin',
+        joined_at: new Date().toISOString()
+      }]);
+
+    if (memberError) {
+      console.error('Database error adding member:', memberError);
+      
+      // Clean up - delete the agency since we couldn't add the member
+      await supabaseAdmin
+        .from('agencies')
+        .delete()
+        .eq('id', agency.id);
+        
+      return NextResponse.json(
+        { error: `Error adding user as agency admin: ${memberError.message}` },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: agency });
   } catch (error: any) {
-    console.error('Server error:', error);
+    console.error('Unexpected error:', error);
     return NextResponse.json(
-      { error: `Server error: ${error.message}` },
+      { error: `Unexpected error: ${error.message}` },
       { status: 500 }
     );
   }

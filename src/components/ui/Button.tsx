@@ -4,7 +4,7 @@ import React from 'react';
 import { cn } from '@/utils/cn';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'error';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   isLoading?: boolean;
@@ -26,6 +26,7 @@ export default function Button({
     secondary: 'bg-white text-primary border border-gray-200 shadow-sm',
     outline: 'bg-white text-gray-800 border border-gray-200 shadow-sm',
     danger: 'bg-error text-white border border-transparent shadow-sm',
+    error: 'bg-red-600 text-white border border-transparent shadow-sm hover:bg-red-700',
   };
 
   const sizeClasses = {
