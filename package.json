@@ -15,7 +15,7 @@
     "@vercel/analytics": "^1.5.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.7.4",
-    "next": "15.3.0",
+    "next": "15.5.9",
     "openai": "^4.95.0",
     "postcss-import": "^16.1.0",
     "react": "^19.0.0",
